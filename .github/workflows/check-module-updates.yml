@@ -1,0 +1,32 @@
+name: Check module updates
+
+# Manual only. The same check runs locally via:
+#   powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/check-module-updates.ps1
+on:
+  workflow_dispatch:
+    inputs:
+      fail_on_update:
+        description: "Fail the job when a pin is behind"
+        type: boolean
+        default: false
+
+jobs:
+  check:
+    name: Compare pinned revisions against upstream
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check pinned west modules
+        shell: pwsh
+        env:
+          # Only used to lift the anonymous API rate limit, which is shared
+          # across GitHub-hosted runners. No extra scopes needed.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $args = @()
+          if ('${{ inputs.fail_on_update }}' -eq 'true') { $args += '-FailOnUpdate' }
+          ./scripts/check-module-updates.ps1 @args

@@ -7,32 +7,51 @@ manifest:
     - name: caksoylar
       url-base: https://github.com/caksoylar
   projects:
+    # `# track:` markers are read by scripts/check-module-updates.ps1 to report
+    # when a pin has fallen behind. Every project must carry one — the script
+    # fails if any is missing, so a new pin cannot silently go unwatched.
+    #   track: <branch>   compare the pinned SHA against that branch's HEAD
+    #   track: tags       report tags on a higher version line than the pinned tag
+
     - name: zmk
       remote: zmkfirmware
-      revision: v0.3
+      revision: v0.3 # track: tags
       import: app/west.yml
 
-    # Toucan2 hardware definitions. Pinned to a SHA rather than `main`, so a
-    # tagged release cannot change behaviour without a commit in this repo.
-    # Provides boards/shields/{toucan,nice_view_gem}.
+    # The beekeeb projects below are pinned to SHAs rather than tracking a
+    # branch, so that a tagged release here always rebuilds to the same firmware.
+    # beekeeb's own manifest floats these on `main` — they author those repos and
+    # coordinate the changes; from this repo all of them are third-party.
+    #
+    # To bump: resolve the SHA from the tracked branch (NOT the repo's default
+    # branch — see the zmk_driver_azoteq note), then verify the build on a
+    # feature branch before merging.
+
+    # Toucan2 shield definitions: boards/shields/{toucan,nice_view_gem}.
+    # pinned 2026-08-21 (upstream commit 2026-07-28)
     - name: zmk-keyboard-toucan2
       remote: beekeeb
-      revision: 6882c95bec5be89988e90feb621f78a7511e9ed7
+      revision: 6882c95bec5be89988e90feb621f78a7511e9ed7 # track: main
+
     # Azoteq TPS43 trackpad driver (Toucan2 right half).
-    # NOTE: this repo's *default* branch is `master`, but beekeeb's own manifest
-    # tracks `main` — and only `main` declares the three-finger-swipe properties
-    # that toucan_right.overlay sets. Pinning master's HEAD fails the devicetree
-    # check. This SHA is main's HEAD.
+    # pinned 2026-08-21 (upstream commit 2026-07-11)
+    # WARNING: this repo's *default* branch is `master`, but beekeeb tracks
+    # `main`, and only `main` declares the three-finger-swipe properties that
+    # toucan_right.overlay sets. Resolving the SHA from the default branch
+    # produces a devicetree error at configure time.
     - name: zmk_driver_azoteq
       remote: beekeeb
-      revision: c329f309b7481e5723603550b15f48e24d0c8a6a
+      revision: c329f309b7481e5723603550b15f48e24d0c8a6a # track: main
+
     # zmk,input-processor-zoom, used by the trackpad's pinch-to-zoom.
+    # pinned 2026-08-21 (upstream commit 2026-06-23)
     - name: zmk-input-zoom
       remote: beekeeb
-      revision: 91bbe0c0e02145da50c9df798489479d28be1804
+      revision: 91bbe0c0e02145da50c9df798489479d28be1804 # track: main
+
     # Provides the rgbled_adapter shield used by both Toucan2 halves.
     - name: zmk-rgbled-widget
       remote: caksoylar
-      revision: v0.3
+      revision: v0.3 # track: tags
   self:
     path: config

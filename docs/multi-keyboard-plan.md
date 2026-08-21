@@ -338,7 +338,7 @@ config/
 ├── corne.keymap             # one-line stub
 ├── corne.conf               # unchanged
 ├── corne_left.conf          # CONFIG_ZMK_POINTING=y — central half only (§5.3)
-├── toucan.keymap            # one-line stub, identical to corne.keymap
+├── toucan.keymap            # shared include + Windows trackpad overrides (§6.3)
 ├── toucan.conf              # keyboard name + our overrides only
 ├── keymap-drawer.config.yml # Corne only; + &mkp legends
 └── west.yml
@@ -421,6 +421,38 @@ flagged in §14 — both boards now enable Studio the same way, in their `.conf`
 `studio-rpc-usb-uart` snippet remaining in `build.yaml` on the left/central half. That is
 exactly the pattern `corne.conf` already follows, and it is why the Toucan entry in §9 has no
 `cmake-args`.
+
+### 6.3 Trackpad gestures: Windows vs macOS
+
+beekeeb's `toucan.dtsi` guards the zoom and three-finger-swipe bindings behind
+`TOUCAN_WIN_MODE`, which ships **commented out** — so the default build emits macOS
+shortcuts. That is why beekeeb distributes separate Windows and Mac stock firmware, and it is
+easy to miss because nothing in the build output flags it.
+
+| Gesture | Default (macOS) | `TOUCAN_WIN_MODE` |
+| --- | --- | --- |
+| Pinch zoom | `LG(MINUS)` / `LG(EQUAL)` | `LC(MINUS)` / `LC(EQUAL)` |
+| 3-finger swipes | `LC(LG(UP/RIGHT/DOWN/LEFT))` | `LG(TAB)`, `LG(RIGHT)`, `LG(D)`, `LG(LEFT)` |
+
+On Windows the default would fire the Magnifier on pinch and do nothing useful on swipe.
+
+**The define cannot be uncommented from this repo** — `toucan.dtsi` lives inside the west
+module, which CI re-clones pristine on every build. Two ways to change it:
+
+1. **Override the labelled nodes from `config/toucan.keymap`** (chosen). Both
+   `zip_zoom_mapper` and `swipe_button_mapper` carry devicetree labels and are defined via
+   `toucan.dtsi` in *both* half overlays, so the override resolves for either build. The
+   choice stays visible in this repo and applies to local builds.
+2. **Inject the define at build time** with
+   `cmake-args: -DDTS_EXTRA_CPPFLAGS=-DTOUCAN_WIN_MODE` on both Toucan matrix entries.
+   `DTS_EXTRA_CPPFLAGS` is plumbed through in ZMK's Zephyr 3.5 fork
+   (`cmake/modules/dts.cmake` passes it as `EXTRA_CPPFLAGS`). This tracks upstream if beekeeb
+   ever changes its Windows bindings, but hides a devicetree-affecting decision in a build
+   flag, and a local build without the flag silently produces macOS behaviour.
+
+Option 1 is what §5.4 anticipated when it said the stubs are where board-specific overrides
+go if any ever arise. The two `.keymap` files are consequently no longer identical — the
+*shared keymap* is still shared, and only the Toucan's trackpad overrides differ.
 
 ### Two small cleanups worth doing while in there
 
