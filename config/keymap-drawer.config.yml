@@ -87,12 +87,12 @@ draw_config:
         translate: 16px 2px;
     }
 
-    .combo.bluetooth.shifted {
-      translate: 0px 2px;
-    }
-    .bluetooth .tap {
-      translate: 5px 4px;
-      font-size: 8px;
+    /* The bluetooth keys were combos until the Media layer gained real keys for
+       them; these rules shrank the legend to fit a 20x20 combo box. On a full
+       key the glyph should just be a normal centred tap legend, so only the
+       profile number in the corner needs nudging. */
+    .bluetooth.shifted {
+      translate: 14px 3px;
     }
 
     use[href="#mdi:comma"] {
@@ -119,6 +119,16 @@ parse_config:
     # Also unhandled by default, so they render as literal binding text.
     "&sys_reset": $$mdi:restart$$
     "&bootloader": $$mdi:usb-flash-drive-outline$$
+    # Hold-to-confirm wrappers. Without these the drawer would resolve the
+    # hold-tap to tap="" (the &none) and put the icon in the small hold slot,
+    # leaving the key looking empty. Matched on the behaviour name, so the
+    # "0 0" parameters do not need repeating.
+    "&reset_hold":
+      tap: $$mdi:restart$$
+      hold: 1s
+    "&boot_hold":
+      tap: $$mdi:usb-flash-drive-outline$$
+      hold: 1s
     # Nav layer clipboard keys. Shown by intent rather than as "Ctl+C" etc, which
     # renders as five near-identical strings. Note these stay as modifier chords
     # in the keymap on purpose: ZMK's dedicated K_COPY / C_AC_COPY usages are
@@ -139,29 +149,36 @@ parse_config:
     "&kp LA(LEFT)": $$mdi:arrow-left-circle$$
     "&kp LA(RIGHT)": $$mdi:arrow-right-circle$$
     "&kp LG(LS(S))": $$mdi:monitor-screenshot$$
+    # "OUT TOG" wrapped onto two cramped lines; the glyph reads as "switch
+    # between the two outputs", with the tooltip naming them.
+    "&out OUT_TOG": $$mdi:swap-horizontal$$
     # NOTE: deliberately no "&mo ..." entries here. A raw_binding_map hit returns
     # early from the parser, before the &mo branch that records which key was held
     # to reach a layer -- so mapping &mo here silently disables the "held" markers.
     # Use layer_legend_map below to style these instead.
+    # Glyph as the main legend, profile number in the corner. These used to be
+    # drawn as combos, where the box is small enough that the number had to be
+    # the primary legend; as full keys on the Media layer there is room for the
+    # icon to carry the meaning.
     "&bt BT_SEL 0":
-      tap: "1"
-      shifted: $$mdi:bluetooth-connect$$
+      tap: $$mdi:bluetooth-connect$$
+      shifted: "1"
       type: bluetooth
     "&bt BT_SEL 1":
-      tap: "2"
-      shifted: $$mdi:bluetooth-connect$$
+      tap: $$mdi:bluetooth-connect$$
+      shifted: "2"
       type: bluetooth
     "&bt BT_SEL 2":
-      tap: "3"
-      shifted: $$mdi:bluetooth-connect$$
+      tap: $$mdi:bluetooth-connect$$
+      shifted: "3"
       type: bluetooth
     "&bt BT_SEL 3":
-      tap: "4"
-      shifted: $$mdi:bluetooth-connect$$
+      tap: $$mdi:bluetooth-connect$$
+      shifted: "4"
       type: bluetooth
     "&bt BT_SEL 4":
-      tap: "5"
-      shifted: $$mdi:bluetooth-connect$$
+      tap: $$mdi:bluetooth-connect$$
+      shifted: "5"
       type: bluetooth
 
   sticky_label: sticky
@@ -350,6 +367,9 @@ parse_config:
       tap: $$mdi:backspace$$
     DELETE: $$mdi:backspace-reverse-outline$$
     DEL: $$mdi:backspace-reverse-outline$$
+    # No icon for Insert: mdi:cursor-text renders as a bare I-beam that reads as
+    # the letter I, and nothing else in the set says "overtype". The three-letter
+    # label is the clearest option, and the tooltip carries the detail.
 
     # Locks
     CAPSLOCK: $$mdi:apple-keyboard-caps$$

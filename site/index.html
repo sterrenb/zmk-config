@@ -57,6 +57,103 @@
       width: 100%;
       height: auto;
       margin: 0 auto;
+      /* Key legends are text nodes, so clicking a key would otherwise start a
+         text selection and drag-select the diagram. Tooltip contents stay
+         selectable -- this is scoped to the diagram only. */
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* --- documented keys ------------------------------------------------- */
+
+    .kb-doc {
+      cursor: pointer;
+    }
+
+    /* Corner dot marking a key that has an explanation. Without a marker,
+       discoverability is nil -- nobody clicks keys speculatively. */
+    .kb-dot {
+      fill: var(--link);
+      pointer-events: none;
+    }
+
+    .kb-doc:hover .kb-dot,
+    .kb-doc.kb-open .kb-dot {
+      r: 4.5;
+    }
+
+    /* --- tooltip ---------------------------------------------------------- */
+
+    .kb-tip {
+      position: absolute;
+      z-index: 10;
+      max-width: min(320px, calc(100vw - 24px));
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px 14px;
+      box-shadow: 0 8px 24px rgb(0 0 0 / 55%);
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    .kb-tip[hidden] {
+      display: none;
+    }
+
+    .kb-tip h2 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .kb-tip p {
+      margin: 0 0 8px;
+      color: var(--fg);
+    }
+
+    .kb-tip p:last-child {
+      margin-bottom: 0;
+    }
+
+    .kb-tip pre {
+      margin: 0 0 8px;
+      padding: 8px 10px;
+      overflow-x: auto;
+      background: #0d1117;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .kb-keys {
+      margin: 0 0 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .kb-keys kbd {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font: inherit;
+      font-size: 12px;
+      color: #fff;
+    }
+
+    .kb-tip ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .kb-tip a {
+      color: var(--link);
     }
 
     footer {
@@ -104,6 +201,155 @@
   <footer>
     <a href="https://github.com/sterrenb/zmk-config">sterrenb/zmk-config</a>
   </footer>
+
+  <script>
+    /*
+     * Progressive enhancement. Without JS, or if either fetch fails, the page
+     * keeps the plain <img> and simply has no tooltips.
+     *
+     * tooltips.json is produced by scripts/build-tooltips.mjs and maps
+     * "<layerIndex>.<keyPosition>" -> content id. Layers are addressed by INDEX,
+     * never by class: the base layer's class is "layer-<version>" and changes
+     * every release.
+     */
+    (async function () {
+      const img = document.querySelector('.keymap');
+      if (!img) return;
+
+      const load = async (url, as) => {
+        try {
+          const res = await fetch(url);
+          return res.ok ? await res[as]() : null;
+        } catch {
+          return null;
+        }
+      };
+
+      const data = await load('tooltips.json', 'json');
+      if (!data) return;
+
+      // Same URL the <img> already fetched, so this is served from cache.
+      const markup = await load(img.currentSrc || img.src, 'text');
+      if (!markup) return;
+
+      const parsed = new DOMParser().parseFromString(markup, 'image/svg+xml');
+      const svg = parsed.documentElement;
+      if (!svg || svg.nodeName !== 'svg') return;
+
+      // Let CSS drive the size; the viewBox preserves the aspect ratio.
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.setAttribute('class', 'keymap');
+      img.replaceWith(svg);
+
+      const NS = 'http://www.w3.org/2000/svg';
+      const layers = svg.querySelectorAll(':scope > g[class^="layer-"]');
+      const targets = new Map();
+
+      for (const [slot, id] of Object.entries(data.keys)) {
+        const [layerIndex, keyIndex] = slot.split('.');
+        const key = layers[layerIndex]?.querySelector(`.keypos-${keyIndex}`);
+        if (!key || !data.content[id]) continue;
+
+        key.classList.add('kb-doc');
+        // Bottom-right of the 53x53 key, which spans -26..27 on both axes.
+        const dot = document.createElementNS(NS, 'circle');
+        dot.setAttribute('cx', '19');
+        dot.setAttribute('cy', '19');
+        dot.setAttribute('r', '3');
+        dot.setAttribute('class', 'kb-dot');
+        key.appendChild(dot);
+        targets.set(key, id);
+      }
+
+      /* ---- renderer boundary -------------------------------------------
+       * Everything below is presentation only. It consumes the structured
+       * fields (title / keys / body / pre / links) and knows nothing about how
+       * they were resolved, so it can be replaced with Floating UI, Tippy, a
+       * docked side panel, etc. without touching the data or the build.
+       */
+      const tip = document.createElement('div');
+      tip.className = 'kb-tip';
+      tip.hidden = true;
+      document.body.appendChild(tip);
+      let openKey = null;
+
+      const el = (tag, text, parent) => {
+        const node = document.createElement(tag);
+        if (text != null) node.textContent = text;
+        parent.appendChild(node);
+        return node;
+      };
+
+      function render(content) {
+        tip.textContent = '';
+        if (content.title) el('h2', content.title, tip);
+        if (content.keys) {
+          const row = el('div', null, tip);
+          row.className = 'kb-keys';
+          content.keys.forEach((k, i) => {
+            if (i) el('span', '+', row);
+            el('kbd', k, row);
+          });
+        }
+        if (content.body) el('p', content.body, tip);
+        if (content.pre) el('pre', content.pre, tip);
+        if (content.links) {
+          const list = el('ul', null, tip);
+          for (const link of content.links) {
+            const a = el('a', link.text, el('li', null, list));
+            a.href = link.href;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+          }
+        }
+      }
+
+      function place(key) {
+        const box = key.getBoundingClientRect();
+        const self = tip.getBoundingClientRect();
+        const pad = 8;
+        let left = box.left + box.width / 2 - self.width / 2;
+        left = Math.max(pad, Math.min(left, innerWidth - self.width - pad));
+        let top = box.bottom + pad;
+        if (top + self.height > innerHeight - pad) top = box.top - self.height - pad;
+        top = Math.max(pad, top);
+        // Page coordinates, so the tooltip stays anchored while scrolling.
+        tip.style.left = `${left + scrollX}px`;
+        tip.style.top = `${top + scrollY}px`;
+      }
+
+      function close() {
+        tip.hidden = true;
+        openKey?.classList.remove('kb-open');
+        openKey = null;
+      }
+
+      function open(key) {
+        render(data.content[targets.get(key)]);
+        tip.hidden = false;
+        place(key);
+        openKey = key;
+        key.classList.add('kb-open');
+      }
+
+      for (const key of targets.keys()) {
+        key.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const wasOpen = openKey === key;
+          close();
+          if (!wasOpen) open(key);
+        });
+      }
+
+      document.addEventListener('click', (event) => {
+        if (!tip.contains(event.target)) close();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') close();
+      });
+    })();
+  </script>
 </body>
 
 </html>

@@ -24,6 +24,14 @@
 
                 // Right hand navigates TEXT, left hand navigates the OS.
                 //
+                // The outer column carries reset (home row) and bootloader (bottom)
+                // for THIS half. They live here rather than on Media because Media
+                // is a tri-layer needing a thumb on each half: once the right half
+                // enters the bootloader it stops scanning and drops its BLE link, so
+                // Media becomes unreachable and the left half could no longer be put
+                // into the bootloader. Nav needs only the left thumb, so it still
+                // works with the right half absent, flat or already flashing.
+                //
                 // The left HOME ROW must stay &trans -- that is what keeps the home
                 // row mods live for Ctrl+arrow, Shift+arrow and Shift+Home, which is
                 // the most valuable thing on this layer. Only rows 0 and 2 are free.
@@ -36,8 +44,8 @@
                         display-name = "Nav";
                         bindings = <
                                 &trans          &kp LG(LEFT)    &kp LG(DOWN)    &kp LG(UP)      &kp LG(RIGHT)   &kp LA(TAB)     &kp LC(Y)       &kp LC(Z)       &kp LC(C)       &kp LC(V)       &kp LC(X)       &trans
-                                &trans          &trans          &trans          &trans          &trans          &trans          &kp INS         &kp LEFT        &kp DOWN        &kp UP          &kp RIGHT       &trans
-                                &trans          &kp LA(LEFT)    &kp LA(RIGHT)   &kp LG(TAB)     &kp LG(LS(S))   &kp K_APP       &trans          &kp HOME        &kp PG_DN       &kp PG_UP       &kp END         &trans
+                                &reset_hold 0 0 &trans          &trans          &trans          &trans          &trans          &kp INS         &kp LEFT        &kp DOWN        &kp UP          &kp RIGHT       &trans
+                                &boot_hold 0 0  &kp LA(LEFT)    &kp LA(RIGHT)   &kp LG(TAB)     &kp LG(LS(S))   &kp K_APP       &trans          &kp HOME        &kp PG_DN       &kp PG_UP       &kp END         &trans
                                                                                 &trans          &trans          &trans          &trans          &trans          &trans
                         >;
                 };
@@ -48,12 +56,16 @@
                 // matches the number row, and it is the only direction that also
                 // works for F1-F12 on the Media layer, which has no numpad form.
                 // Arithmetic sits in the inner column. Symbols stay on the combos.
+                //
+                // The outer column mirrors Nav: reset on the home row, bootloader
+                // below, both acting on the RIGHT half. Nav covers the left half and
+                // Num the right, so each is reachable with a single thumb.
                 num_layer {
                         display-name = "Num";
                         bindings = <
                                 &trans          &trans          &kp N1          &kp N2          &kp N3          &kp PLUS        &trans          &trans          &trans          &trans          &trans          &trans
-                                &trans          &trans          &kp N4          &kp N5          &kp N6          &kp MINUS       &trans          &trans          &trans          &trans          &trans          &trans
-                                &trans          &trans          &kp N7          &kp N8          &kp N9          &kp ASTERISK    &trans          &trans          &trans          &trans          &trans          &trans
+                                &trans          &trans          &kp N4          &kp N5          &kp N6          &kp MINUS       &trans          &trans          &trans          &trans          &trans          &reset_hold 0 0
+                                &trans          &trans          &kp N7          &kp N8          &kp N9          &kp ASTERISK    &trans          &trans          &trans          &trans          &trans          &boot_hold 0 0
                                                                                 &kp N0          &trans          &trans          &trans          &trans          &trans
                         >;
                 };
@@ -63,12 +75,16 @@
                 // left/right are, volume where up/down are, brightness below it.
                 // Left hand mirrors the Num layer exactly, so F1-F9 sit on the same
                 // keys as 1-9 and the inner column carries F10-F12.
+                //
+                // reset/bootloader deliberately do NOT live here -- see the Nav layer
+                // comment. This layer needs a thumb on each half, so it is exactly
+                // the wrong place for the keys you need when one half is missing.
                 media_layer {
                         display-name = "Media";
                         bindings = <
                                 &trans          &trans          &kp F1          &kp F2          &kp F3          &kp F10         &bt BT_SEL 0    &bt BT_SEL 1    &bt BT_SEL 2    &bt BT_SEL 3    &bt BT_SEL 4    &bt BT_CLR
                                 &trans          &trans          &kp F4          &kp F5          &kp F6          &kp F11         &out OUT_TOG    &kp C_PREV      &kp C_VOL_DN    &kp C_VOL_UP    &kp C_NEXT      &kp C_MUTE
-                                &trans          &trans          &kp F7          &kp F8          &kp F9          &kp F12         &kp C_PLAY_PAUSE &kp C_AL_LOCK  &kp C_BRI_DN    &kp C_BRI_UP    &sys_reset      &bootloader
+                                &trans          &trans          &kp F7          &kp F8          &kp F9          &kp F12         &kp C_PLAY_PAUSE &kp C_AL_LOCK  &kp C_BRI_DN    &kp C_BRI_UP    &trans          &trans
                                                                                 &trans          &trans          &trans          &trans          &trans          &trans
                         >;
                 };

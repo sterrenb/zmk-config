@@ -71,5 +71,35 @@
             tapping-term-ms = <TAPPING_TERM_MS>;
             bindings = <&mo>, <&kp>;
         };
+
+        // Hold-to-confirm wrappers for the two destructive keys. A press shorter
+        // than a second does nothing at all.
+        //
+        // "tap-preferred" is the safety property here: unlike the other flavours
+        // it resolves to the HOLD only when the full tapping term elapses --
+        // pressing any other key in the meantime resolves to the tap instead, so
+        // a stray chord can never reboot the board.
+        //
+        // Wrapping does not change which half reboots. The hold-tap runs on the
+        // central but passes event.source through, and zmk_behavior_invoke_binding
+        // reads locality from the inner behaviour, which is EVENT_SOURCE.
+        //
+        // Node names kept <= 8 characters out of caution: that is ZMK's limit for
+        // behaviours invoked on a peripheral.
+        boot_hold: boothold {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <1000>;
+            bindings = <&bootloader>, <&none>;
+        };
+
+        reset_hold: rsthold {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <1000>;
+            bindings = <&sys_reset>, <&none>;
+        };
     };
 };

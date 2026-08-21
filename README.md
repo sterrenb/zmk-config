@@ -14,7 +14,7 @@ once in [`config/shared/`](./config/shared) and each keyboard's `.keymap` is a o
 include. See [the multi-keyboard plan](./docs/multi-keyboard-plan.md) for the details and the
 constraints that come with it.
 
-## ⊞ Layout
+## Layout
 
 ![Keymap Diagram](keymap-drawer/corne.svg)
 
@@ -27,7 +27,7 @@ which is unreachable on the Corne.
 
 `Adjust` is reached by holding both thumb layer keys together (tri-layer).
 
-## ⚲ Key Positions
+## Key Positions
 
 Used as `key-positions` for [combos](https://zmk.dev/docs/keymaps/combos). Identical on both
 keyboards.
@@ -41,7 +41,7 @@ Left half (21 keys)       Right half (21 keys)
               36  37  38    39  40  41
 ```
 
-## 🛠 Building firmware
+## Building firmware
 
 The firmware and diagrams are built via GitHub Actions workflow. Each release attaches a
 `firmware-<version>.zip` containing:
@@ -59,6 +59,44 @@ how you tell which firmware a board is running.
 
 To use Keymap Drawer locally, see the [scripts](./scripts): `draw.zsh` on macOS/Linux,
 `draw.ps1` on Windows.
+
+## Site
+
+The keymap diagram is published via Cloudflare
+Pages, which deploys `main` automatically.
+
+| Setting | Value |
+| --- | --- |
+| Build command | `node scripts/build-site.mjs` |
+| Output directory | `dist` |
+| Production branch | `main` |
+
+Keys marked with a dot have an explanation; click one to open it. The content lives in
+[`site/tooltips.mjs`](./site/tooltips.mjs) and is matched on **binding**, not key position,
+so a tooltip follows its key when the layout changes.
+
+### Running it locally
+
+Requires [Node](https://nodejs.org/) and, for the preview server, [uv](https://docs.astral.sh/uv/)
+(any static file server works).
+
+```powershell
+powershell -File .\scripts\draw.ps1     # only after editing the keymap, see below
+node scripts/build-site.mjs
+uv run --no-project python -m http.server -d dist 8080
+```
+
+Then open <http://localhost:8080>. The same commands work in Git Bash and on CI — the build
+is plain Node, with no shell dependency.
+
+> **Redraw first when you have changed the keymap.** `keymap-drawer/corne.svg` is generated
+> by the drawer workflow and committed, so it lags any uncommitted edit. The build prefers
+> `keymap-drawer/corne.local.svg` (gitignored, written by `draw.ps1`) when present, so
+> redrawing lets you preview your working keymap. Skip it and the build stops with a layer
+> mismatch rather than annotating a diagram that no longer matches.
+
+The build fails deliberately if a tooltip matches no key, if the diagram is out of step with
+the keymap, or if `site/index.html` and the build script disagree about the diagram URL.
 
 ## 🖇 Useful links
 
