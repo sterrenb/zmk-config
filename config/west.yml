@@ -19,9 +19,13 @@ manifest:
       remote: beekeeb
       revision: 6882c95bec5be89988e90feb621f78a7511e9ed7
     # Azoteq TPS43 trackpad driver (Toucan2 right half).
+    # NOTE: this repo's *default* branch is `master`, but beekeeb's own manifest
+    # tracks `main` — and only `main` declares the three-finger-swipe properties
+    # that toucan_right.overlay sets. Pinning master's HEAD fails the devicetree
+    # check. This SHA is main's HEAD.
     - name: zmk_driver_azoteq
       remote: beekeeb
-      revision: 52fcfe5026c9f74d611d05b2084548e046a7e274
+      revision: c329f309b7481e5723603550b15f48e24d0c8a6a
     # zmk,input-processor-zoom, used by the trackpad's pinch-to-zoom.
     - name: zmk-input-zoom
       remote: beekeeb
