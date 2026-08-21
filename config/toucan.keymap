@@ -1,1 +1,26 @@
 #include "./shared/keymap.dtsi"
+
+// Toucan2 trackpad gestures — Windows variant.
+//
+// beekeeb's boards/shields/toucan/toucan.dtsi selects macOS shortcuts unless
+// TOUCAN_WIN_MODE is defined, and it ships commented out — which is why beekeeb
+// distributes separate Windows and Mac stock firmware. That define lives inside
+// the west module, so it cannot be edited from this repo.
+//
+// Both input processors carry devicetree labels, so their bindings are
+// overridden here instead. Keeping it in the keymap rather than a build flag
+// means the choice is visible in this repo and applies to local builds too.
+//
+// To go back to macOS, use the values from toucan.dtsi's #else branch:
+//   zoom:   <&kp LG(MINUS)>, <&kp LG(EQUAL)>
+//   swipes: <&kp LC(LG(UP))>, <&kp LC(LG(RIGHT))>, <&kp LC(LG(DOWN))>, <&kp LC(LG(LEFT))>
+
+// Pinch to zoom -> Ctrl + / Ctrl -
+&zip_zoom_mapper {
+    bindings = <&kp LC(MINUS)>, <&kp LC(EQUAL)>;
+};
+
+// Three-finger swipes -> Task View / snap right / show desktop / snap left
+&swipe_button_mapper {
+    bindings = <&kp LG(TAB)>, <&kp LG(RIGHT)>, <&kp LG(D)>, <&kp LG(LEFT)>;
+};
