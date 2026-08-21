@@ -476,7 +476,7 @@ manifest:
       revision: 6882c95bec5be89988e90feb621f78a7511e9ed7
     - name: zmk_driver_azoteq        # TPS43 trackpad driver
       remote: beekeeb
-      revision: 52fcfe5026c9f74d611d05b2084548e046a7e274
+      revision: c329f309b7481e5723603550b15f48e24d0c8a6a
     - name: zmk-input-zoom           # zmk,input-processor-zoom
       remote: beekeeb
       revision: 91bbe0c0e02145da50c9df798489479d28be1804
@@ -500,6 +500,22 @@ the Azoteq TPS43, so we omit it.
 them floating means a tagged release can change behaviour with no commit in this repo — and
 it would also undermine §12, where the whole point is that a Toucan2 flash test says
 something durable about the firmware.
+
+> ⚠️ **Pin the branch beekeeb tracks, not the repo's default branch.** `zmk_driver_azoteq`
+> has `master` as its GitHub *default* branch, but beekeeb's own manifest pins **`main`**, and
+> the two have diverged: only `main` declares the `three-finger-swipe` and
+> `three-finger-swipe-throttle-ms` properties that `toucan_right.overlay` sets. Resolving the
+> SHA from the default branch produces a build that fails at devicetree generation:
+>
+> ```
+> devicetree error: 'three-finger-swipe' appears in /soc/i2c@40003000/trackpad@74 …
+> but is not declared in 'properties:' in …/azoteq,tps43-i2c.yaml
+> ```
+>
+> `zmk-keyboard-toucan2` and `zmk-input-zoom` both default to `main`, so only this one repo is
+> affected. When bumping any of these pins, resolve the SHA from `main` explicitly
+> (`/repos/<owner>/<repo>/commits/main`), and cross-check the overlay's properties against the
+> binding's declared set before pushing.
 
 ## 9. Build matrix
 
