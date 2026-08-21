@@ -4,4 +4,4 @@
 // Rendered as the base layer's display-name, which both keyboards' displays
 // show while on the base layer — that is the at-a-glance "which firmware is on
 // this board?" indicator. See docs/multi-keyboard-plan.md §10.
-#define KEYMAP_VERSION "v1.0.1"
+#define KEYMAP_VERSION "v1.1.0"
