@@ -6,8 +6,11 @@ on:
     branches-ignore:
       - main
     paths:
-      - "config/*.keymap"
-      - "config/*.dtsi"
+      # Corne only: both keyboards share config/shared/keymap.dtsi and the same
+      # key numbering, so one diagram documents both. Toucan-only changes must
+      # not trigger a redraw that produces an empty commit.
+      - "config/corne.keymap"
+      - "config/shared/**"
       - "config/keymap-drawer.config.yml"
 
 concurrency:
@@ -24,9 +27,14 @@ jobs:
     permissions:
       contents: write
     with:
-      keymap_patterns: "config/*.keymap"
+      # Corne only. Globbing config/*.keymap would also pick up
+      # config/toucan.keymap, for which keymap-drawer has no physical layout.
+      keymap_patterns: "config/corne.keymap"
       config_path: "config/keymap-drawer.config.yml"
       output_folder: "keymap-drawer"
+      # Pinned so unrelated keymap-drawer releases cannot perturb corne.svg, and
+      # so CI matches what scripts/draw.ps1 produces locally.
+      install_version: "0.23.0"
       parse_args: ""
       draw_args: ""
       commit_message: "chore(draw): update keymaps"

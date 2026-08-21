@@ -1,0 +1,79 @@
+/*
+ * Copyright (c) 2020 The ZMK Contributors
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+#include "./base.dtsi"
+#include "./version.dtsi"
+#include <dt-bindings/zmk/keys.h>
+
+/ {
+        keymap {
+                compatible = "zmk,keymap";
+
+                default_layer {
+                        display-name = KEYMAP_VERSION;
+                        bindings = <
+                                &kp ESC         &kp B           &kp L           &kp D           &kp W           &kp Z           &kp SQT         &kp F           &kp O           &kp U           &kp J           &kp BSPC
+                                &kp TAB         &hml LSHFT N    &hml LCTRL R    &hml LALT T     &hml LGUI S     &kp G           &kp Y           &hmr RGUI H     &hmr RALT A     &hmr RCTRL E    &hmr RSHFT I    &kp DQT
+                                &kp GRAVE       &kp Q           &kp X           &kp M           &kp C           &kp V           &kp K           &kp P           &kp COMMA       &kp DOT         &kp SEMICOLON   &kp ESC
+                                                                                &kp LGUI        &mo LOWER       &kp SPACE       &kp RET         &mo RAISE       &kp TAB
+                        >;
+                };
+                lower_layer {
+                        display-name = "Lower";
+                        bindings = <
+                                &trans          &kp N1          &kp N2          &kp N3          &kp N4          &kp N5          &kp N6          &kp N7          &kp N8          &kp N9          &kp N0          &kp BSPC
+                                &kp C_BRI_UP    &hml LSHFT N6   &hml LCTRL N7   &hml LALT N8    &hml LGUI N9    &kp N0          &trans          &kp LEFT        &kp DOWN        &kp UP          &kp RIGHT       &trans
+                                &kp C_BRI_DN    &kp PRINTSCREEN &kp C_PREV      &kp C_PLAY_PAUSE &kp C_NEXT     &kp K_APP       &trans          &trans          &trans          &trans          &trans          &trans
+                                                                                &kp LGUI        &trans          &kp SPACE       &kp RET         &mo RAISE       &kp TAB
+                        >;
+                };
+
+                raise_layer {
+                        display-name = "Raise";
+                        bindings = <
+                                &trans          &kp F1          &kp F2          &kp F3          &kp F4          &kp F5          &kp CARET       &kp RGUI        &kp RALT        &kp RCTRL       &kp RSHFT       &kp BSPC
+                                &trans          &hml LSHFT F6   &hml LCTRL F7   &hml LALT F8    &hml LGUI F9    &kp F10         &kp MINUS       &kp LEFT        &kp DOWN        &kp UP          &kp RIGHT       &kp GRAVE
+                                &trans          &kp F11         &kp F12         &kp F13         &kp F14         &kp F15         &kp F15         &kp HOME        &kp PG_DN       &kp PG_UP       &kp END         &kp TILDE
+                                                                                &kp LGUI        &mo LOWER       &kp SPACE       &kp RET         &trans          &kp TAB
+                        >;
+                };
+
+                // Reached by holding LOWER + RAISE together (tri-layer, below).
+                // Bluetooth keys sit on the same positions as the existing
+                // COMBO_RAISE bluetooth combos, which are left in place.
+                adjust_layer {
+                        display-name = "Adjust";
+                        bindings = <
+                                &trans          &trans          &trans          &trans          &trans          &trans          &bt BT_SEL 0    &bt BT_SEL 1    &bt BT_SEL 2    &bt BT_SEL 3    &bt BT_SEL 4    &bt BT_CLR
+                                &trans          &trans          &trans          &trans          &trans          &trans          &out OUT_TOG    &trans          &trans          &trans          &trans          &trans
+                                &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &sys_reset      &bootloader
+                                                                                &trans          &trans          &trans          &trans          &trans          &trans
+                        >;
+                };
+
+                // Activated by the Toucan2 trackpad while a finger is down, via the
+                // shield's is_touching_processor. Unreachable on the Corne by design.
+                mouse_layer {
+                        display-name = "Mouse";
+                        bindings = <
+                                &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans
+                                &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans
+                                &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans          &trans
+                                                                                &mkp MCLK       &mkp LCLK       &mkp RCLK       &mkp LCLK       &mkp RCLK       &mkp MCLK
+                        >;
+                };
+
+        };
+
+        conditional_layers {
+                compatible = "zmk,conditional-layers";
+
+                tri_layer {
+                        if-layers = <LOWER RAISE>;
+                        then-layer = <ADJUST>;
+                };
+        };
+};

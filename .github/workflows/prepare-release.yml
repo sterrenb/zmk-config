@@ -17,7 +17,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
@@ -45,6 +45,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git push origin --delete "$BRANCH" || true
           git checkout -b "$BRANCH"
-          sed -i "0,/display-name\s*=\s*\"[^\"]*\";/s//display-name = \"$VERSION\";/" config/corne.keymap
+          # Anchored to a unique token rather than the first display-name in the
+          # file: the shared keymap now carries five of them, and layer order is
+          # load-bearing for the Toucan2 trackpad. One stamp covers both boards.
+          sed -i "s/^#define KEYMAP_VERSION .*/#define KEYMAP_VERSION \"$VERSION\"/" config/shared/version.dtsi
           git commit -am "chore(release): set display-name to $VERSION"
           git push origin "$BRANCH"

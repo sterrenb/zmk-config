@@ -5,9 +5,13 @@ on:
     branches-ignore:
       - main
     paths:
-      - "config/*.keymap"
-      - "config/*.dtsi"
-      - "config/west.yml"
+      # config/** rather than config/*.dtsi: a `*` glob does not cross `/`, so
+      # config/shared/*.dtsi would not match. The release flow depends on this —
+      # prepare-release.yml stamps config/shared/version.dtsi, and if that push
+      # does not trigger a build there is no firmware artifact and no release.
+      - "config/**"
+      - "boards/**"
+      - "build.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
