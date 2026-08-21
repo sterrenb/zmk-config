@@ -50,7 +50,7 @@ $ErrorActionPreference = 'Stop'
 $script:ApiHeaders = @{
     'Accept'               = 'application/vnd.github+json'
     'X-GitHub-Api-Version' = '2022-11-28'
-    'User-Agent'           = 'zmk-config-corneview-update-check'
+    'User-Agent'           = 'zmk-config-update-check'
 }
 if (-not [string]::IsNullOrWhiteSpace($Token)) {
     $script:ApiHeaders['Authorization'] = "Bearer $Token"
@@ -121,7 +121,7 @@ $lines = Get-Content -LiteralPath $westFile
 $remotes = @{}
 $currentRemote = $null
 foreach ($line in $lines) {
-    if ($line -match '^\s*-\s*name:\s*(\S+)')      { $currentRemote = $Matches[1]; continue }
+    if ($line -match '^\s*-\s*name:\s*(\S+)') { $currentRemote = $Matches[1]; continue }
     if ($line -match '^\s*url-base:\s*(\S+)' -and $currentRemote) {
         $remotes[$currentRemote] = $Matches[1].TrimEnd('/')
         $currentRemote = $null
@@ -139,7 +139,7 @@ foreach ($line in $lines) {
         continue
     }
     if (-not $pending) { continue }
-    if ($line -match '^\s*remote:\s*(\S+)')   { $pending.Remote = $Matches[1]; continue }
+    if ($line -match '^\s*remote:\s*(\S+)') { $pending.Remote = $Matches[1]; continue }
     if ($line -match '^\s*revision:\s*(\S+)') {
         $pending.Revision = $Matches[1]
         if ($line -match '#\s*track:\s*(\S+)') { $pending.Track = $Matches[1] }

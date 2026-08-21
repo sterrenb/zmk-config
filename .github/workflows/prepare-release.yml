@@ -45,9 +45,14 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git push origin --delete "$BRANCH" || true
           git checkout -b "$BRANCH"
+          # Strip the leading "v" for the on-display string only; the tag and the
+          # release branch keep it. The Toucan2's nice!view Gem renders the base
+          # layer name in a monospace 21.6px font into 121px of usable width, so
+          # only 5 characters fit -- "v1.0.1" clips the "v", "1.0.1" does not.
+          DISPLAY_VERSION="${VERSION#v}"
           # Anchored to a unique token rather than the first display-name in the
           # file: the shared keymap now carries five of them, and layer order is
           # load-bearing for the Toucan2 trackpad. One stamp covers both boards.
-          sed -i "s/^#define KEYMAP_VERSION .*/#define KEYMAP_VERSION \"$VERSION\"/" config/shared/version.dtsi
-          git commit -am "chore(release): set display-name to $VERSION"
+          sed -i "s/^#define KEYMAP_VERSION .*/#define KEYMAP_VERSION \"$DISPLAY_VERSION\"/" config/shared/version.dtsi
+          git commit -am "chore(release): set display-name to $DISPLAY_VERSION"
           git push origin "$BRANCH"
