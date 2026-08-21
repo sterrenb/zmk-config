@@ -22,15 +22,22 @@
                         >;
                 };
 
-                // Held by the LEFT thumb, so everything lives on the RIGHT hand.
-                // The left hand stays &trans to keep the home row mods available
-                // for Ctrl+arrow, Shift+Home and so on.
+                // Right hand navigates TEXT, left hand navigates the OS.
+                //
+                // The left HOME ROW must stay &trans -- that is what keeps the home
+                // row mods live for Ctrl+arrow, Shift+arrow and Shift+Home, which is
+                // the most valuable thing on this layer. Only rows 0 and 2 are free.
+                //
+                // Row 0 reads left-to-right as the window snaps, matching the order
+                // the arrows read on the right hand. Deliberately omits things that
+                // are already trivial on base with a home row mod (Ctrl+F, Ctrl+S):
+                // these are the chords that are genuinely awkward otherwise.
                 nav_layer {
                         display-name = "Nav";
                         bindings = <
-                                &trans          &trans          &trans          &trans          &trans          &trans          &kp LC(Y)       &kp LC(Z)       &kp LC(C)       &kp LC(V)       &kp LC(X)       &trans
+                                &trans          &kp LG(LEFT)    &kp LG(DOWN)    &kp LG(UP)      &kp LG(RIGHT)   &kp LA(TAB)     &kp LC(Y)       &kp LC(Z)       &kp LC(C)       &kp LC(V)       &kp LC(X)       &trans
                                 &trans          &trans          &trans          &trans          &trans          &trans          &kp INS         &kp LEFT        &kp DOWN        &kp UP          &kp RIGHT       &trans
-                                &trans          &trans          &trans          &trans          &trans          &trans          &trans          &kp HOME        &kp PG_DN       &kp PG_UP       &kp END         &trans
+                                &trans          &kp LA(LEFT)    &kp LA(RIGHT)   &kp LG(TAB)     &kp LG(LS(S))   &kp K_APP       &trans          &kp HOME        &kp PG_DN       &kp PG_UP       &kp END         &trans
                                                                                 &trans          &trans          &trans          &trans          &trans          &trans
                         >;
                 };

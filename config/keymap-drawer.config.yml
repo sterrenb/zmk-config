@@ -128,6 +128,17 @@ parse_config:
     "&kp LC(X)": $$mdi:content-cut$$
     "&kp LC(C)": $$mdi:content-copy$$
     "&kp LC(V)": $$mdi:content-paste$$
+    # Nav layer, left hand: OS navigation. Shown by intent, since the default
+    # rendering would be "Gui+" plus the arrow glyph, which reads as a cursor key.
+    "&kp LG(LEFT)": $$mdi:dock-left$$
+    "&kp LG(RIGHT)": $$mdi:dock-right$$
+    "&kp LG(UP)": $$mdi:window-maximize$$
+    "&kp LG(DOWN)": $$mdi:window-minimize$$
+    "&kp LA(TAB)": $$mdi:window-restore$$
+    "&kp LG(TAB)": $$mdi:view-grid-outline$$
+    "&kp LA(LEFT)": $$mdi:arrow-left-circle$$
+    "&kp LA(RIGHT)": $$mdi:arrow-right-circle$$
+    "&kp LG(LS(S))": $$mdi:monitor-screenshot$$
     # NOTE: deliberately no "&mo ..." entries here. A raw_binding_map hit returns
     # early from the parser, before the &mo branch that records which key was held
     # to reach a layer -- so mapping &mo here silently disables the "held" markers.
