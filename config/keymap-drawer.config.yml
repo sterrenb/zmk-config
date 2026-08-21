@@ -41,6 +41,18 @@ draw_config:
       opacity: 0.75;
     }
 
+    /* Layer activators. keymap-drawer marks every key that must be HELD to be on
+       the layer, and because mark_alternate_layer_activators stays off (default)
+       the meaning is unambiguous: ALL marked keys are held at once. That is what
+       makes Media's two marked thumbs read as the tri-layer combination rather
+       than "either one". Dashed outline so it is not mistaken for the red accent
+       keys or the blue combo boxes. */
+    rect.held {
+      stroke: var(--color--red);
+      stroke-width: 2;
+      stroke-dasharray: 4 3;
+    }
+
     .keypos-0 rect.key,
     .keypos-11 rect.key {
       fill: var(--color--red);
@@ -60,20 +72,27 @@ draw_config:
     }
 
     .hold {
-        translate: -16px 0px;
         opacity: 0.75;
+    }
+
+    /* The -16px nudge is only for the modifier GLYPHS on the home row, which
+       keymap-drawer emits at x="-6". Text hold legends -- the "Num" layer name on
+       the thumb -- are emitted at x="0" with text-anchor: middle, so they are
+       already centred; shifting them just pushes them into the bottom-left. */
+    use.hold {
+        translate: -16px 0px;
     }
 
     .key.shifted {
         translate: 16px 2px;
     }
 
-    .combo.bluetooth.shifted {
-      translate: 0px 2px;
-    }
-    .bluetooth .tap {
-      translate: 5px 4px;
-      font-size: 8px;
+    /* The bluetooth keys were combos until the Media layer gained real keys for
+       them; these rules shrank the legend to fit a 20x20 combo box. On a full
+       key the glyph should just be a normal centred tap legend, so only the
+       profile number in the corner needs nudging. */
+    .bluetooth.shifted {
+      translate: 14px 3px;
     }
 
     use[href="#mdi:comma"] {
@@ -97,29 +116,69 @@ parse_config:
     "&mkp LCLK": $$mdi:mouse-left-click-outline$$
     "&mkp RCLK": $$mdi:mouse-right-click-outline$$
     "&mkp MCLK": $$mdi:mouse$$
-    "&mo 1": $$material:arrow_circle_down$$
-    "&mo 2": $$material:arrow_circle_up$$
-    "&mo LOWER": $$material:arrow_circle_down$$
-    "&mo RAISE": $$material:arrow_circle_up$$
+    # Also unhandled by default, so they render as literal binding text.
+    "&sys_reset": $$mdi:restart$$
+    "&bootloader": $$mdi:usb-flash-drive-outline$$
+    # Hold-to-confirm wrappers. Without these the drawer would resolve the
+    # hold-tap to tap="" (the &none) and put the icon in the small hold slot,
+    # leaving the key looking empty. Matched on the behaviour name, so the
+    # "0 0" parameters do not need repeating.
+    "&reset_hold":
+      tap: $$mdi:restart$$
+      hold: 1s
+    "&boot_hold":
+      tap: $$mdi:usb-flash-drive-outline$$
+      hold: 1s
+    # Nav layer clipboard keys. Shown by intent rather than as "Ctl+C" etc, which
+    # renders as five near-identical strings. Note these stay as modifier chords
+    # in the keymap on purpose: ZMK's dedicated K_COPY / C_AC_COPY usages are
+    # marked unsupported on Windows in ZMK's own hid.js compatibility data.
+    "&kp LC(Z)": $$mdi:undo$$
+    "&kp LC(Y)": $$mdi:redo$$
+    "&kp LC(X)": $$mdi:content-cut$$
+    "&kp LC(C)": $$mdi:content-copy$$
+    "&kp LC(V)": $$mdi:content-paste$$
+    # Nav layer, left hand: OS navigation. Shown by intent, since the default
+    # rendering would be "Gui+" plus the arrow glyph, which reads as a cursor key.
+    "&kp LG(LEFT)": $$mdi:dock-left$$
+    "&kp LG(RIGHT)": $$mdi:dock-right$$
+    "&kp LG(UP)": $$mdi:window-maximize$$
+    "&kp LG(DOWN)": $$mdi:window-minimize$$
+    "&kp LA(TAB)": $$mdi:window-restore$$
+    "&kp LG(TAB)": $$mdi:view-grid-outline$$
+    "&kp LA(LEFT)": $$mdi:arrow-left-circle$$
+    "&kp LA(RIGHT)": $$mdi:arrow-right-circle$$
+    "&kp LG(LS(S))": $$mdi:monitor-screenshot$$
+    # "OUT TOG" wrapped onto two cramped lines; the glyph reads as "switch
+    # between the two outputs", with the tooltip naming them.
+    "&out OUT_TOG": $$mdi:swap-horizontal$$
+    # NOTE: deliberately no "&mo ..." entries here. A raw_binding_map hit returns
+    # early from the parser, before the &mo branch that records which key was held
+    # to reach a layer -- so mapping &mo here silently disables the "held" markers.
+    # Use layer_legend_map below to style these instead.
+    # Glyph as the main legend, profile number in the corner. These used to be
+    # drawn as combos, where the box is small enough that the number had to be
+    # the primary legend; as full keys on the Media layer there is room for the
+    # icon to carry the meaning.
     "&bt BT_SEL 0":
-      tap: "1"
-      shifted: $$mdi:bluetooth-connect$$
+      tap: $$mdi:bluetooth-connect$$
+      shifted: "1"
       type: bluetooth
     "&bt BT_SEL 1":
-      tap: "2"
-      shifted: $$mdi:bluetooth-connect$$
+      tap: $$mdi:bluetooth-connect$$
+      shifted: "2"
       type: bluetooth
     "&bt BT_SEL 2":
-      tap: "3"
-      shifted: $$mdi:bluetooth-connect$$
+      tap: $$mdi:bluetooth-connect$$
+      shifted: "3"
       type: bluetooth
     "&bt BT_SEL 3":
-      tap: "4"
-      shifted: $$mdi:bluetooth-connect$$
+      tap: $$mdi:bluetooth-connect$$
+      shifted: "4"
       type: bluetooth
     "&bt BT_SEL 4":
-      tap: "5"
-      shifted: $$mdi:bluetooth-connect$$
+      tap: $$mdi:bluetooth-connect$$
+      shifted: "5"
       type: bluetooth
 
   sticky_label: sticky
@@ -128,7 +187,12 @@ parse_config:
   trans_legend:
     t: ▽
     type: trans
+  # Legend used when a layer is *referenced* by &mo/&to/&tog. Keyed on the layer's
+  # display-name. This keeps the arrow glyphs on the thumb keys while letting the
+  # parser mark those keys as held on the layer they activate.
   layer_legend_map: {}
+    # Nav: $$material:arrow_circle_down$$
+    # Num: $$material:arrow_circle_up$$
   zmk_remove_keycode_prefix: []
   zmk_keycode_map:
     # Symbols
@@ -303,6 +367,9 @@ parse_config:
       tap: $$mdi:backspace$$
     DELETE: $$mdi:backspace-reverse-outline$$
     DEL: $$mdi:backspace-reverse-outline$$
+    # No icon for Insert: mdi:cursor-text renders as a bare I-beam that reads as
+    # the letter I, and nothing else in the set says "overtype". The three-letter
+    # label is the clearest option, and the tooltip carries the detail.
 
     # Locks
     CAPSLOCK: $$mdi:apple-keyboard-caps$$
