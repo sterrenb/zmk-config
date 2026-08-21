@@ -41,6 +41,18 @@ draw_config:
       opacity: 0.75;
     }
 
+    /* Layer activators. keymap-drawer marks every key that must be HELD to be on
+       the layer, and because mark_alternate_layer_activators stays off (default)
+       the meaning is unambiguous: ALL marked keys are held at once. That is what
+       makes Media's two marked thumbs read as the tri-layer combination rather
+       than "either one". Dashed outline so it is not mistaken for the red accent
+       keys or the blue combo boxes. */
+    rect.held {
+      stroke: var(--color--red);
+      stroke-width: 2;
+      stroke-dasharray: 4 3;
+    }
+
     .keypos-0 rect.key,
     .keypos-11 rect.key {
       fill: var(--color--red);
@@ -60,8 +72,15 @@ draw_config:
     }
 
     .hold {
-        translate: -16px 0px;
         opacity: 0.75;
+    }
+
+    /* The -16px nudge is only for the modifier GLYPHS on the home row, which
+       keymap-drawer emits at x="-6". Text hold legends -- the "Num" layer name on
+       the thumb -- are emitted at x="0" with text-anchor: middle, so they are
+       already centred; shifting them just pushes them into the bottom-left. */
+    use.hold {
+        translate: -16px 0px;
     }
 
     .key.shifted {
@@ -97,10 +116,22 @@ parse_config:
     "&mkp LCLK": $$mdi:mouse-left-click-outline$$
     "&mkp RCLK": $$mdi:mouse-right-click-outline$$
     "&mkp MCLK": $$mdi:mouse$$
-    "&mo 1": $$material:arrow_circle_down$$
-    "&mo 2": $$material:arrow_circle_up$$
-    "&mo LOWER": $$material:arrow_circle_down$$
-    "&mo RAISE": $$material:arrow_circle_up$$
+    # Also unhandled by default, so they render as literal binding text.
+    "&sys_reset": $$mdi:restart$$
+    "&bootloader": $$mdi:usb-flash-drive-outline$$
+    # Nav layer clipboard keys. Shown by intent rather than as "Ctl+C" etc, which
+    # renders as five near-identical strings. Note these stay as modifier chords
+    # in the keymap on purpose: ZMK's dedicated K_COPY / C_AC_COPY usages are
+    # marked unsupported on Windows in ZMK's own hid.js compatibility data.
+    "&kp LC(Z)": $$mdi:undo$$
+    "&kp LC(Y)": $$mdi:redo$$
+    "&kp LC(X)": $$mdi:content-cut$$
+    "&kp LC(C)": $$mdi:content-copy$$
+    "&kp LC(V)": $$mdi:content-paste$$
+    # NOTE: deliberately no "&mo ..." entries here. A raw_binding_map hit returns
+    # early from the parser, before the &mo branch that records which key was held
+    # to reach a layer -- so mapping &mo here silently disables the "held" markers.
+    # Use layer_legend_map below to style these instead.
     "&bt BT_SEL 0":
       tap: "1"
       shifted: $$mdi:bluetooth-connect$$
@@ -128,7 +159,12 @@ parse_config:
   trans_legend:
     t: ▽
     type: trans
+  # Legend used when a layer is *referenced* by &mo/&to/&tog. Keyed on the layer's
+  # display-name. This keeps the arrow glyphs on the thumb keys while letting the
+  # parser mark those keys as held on the layer they activate.
   layer_legend_map: {}
+    # Nav: $$material:arrow_circle_down$$
+    # Num: $$material:arrow_circle_up$$
   zmk_remove_keycode_prefix: []
   zmk_keycode_map:
     # Symbols

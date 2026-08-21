@@ -35,5 +35,41 @@
             hold-trigger-on-release;
             bindings = <&kp>, <&kp>;
         };
+
+        // Thumb layer-tap: hold for the layer, tap for the key.
+        //
+        // Not ZMK's stock &lt, which is flavor = "tap-preferred": that only
+        // triggers the hold once the tapping term has fully elapsed, so holding
+        // the thumb and immediately hitting a key gives you the TAP plus the
+        // base-layer key instead of the layer. "hold-preferred" resolves to the
+        // hold as soon as another key is pressed, which is what a layer key on a
+        // thumb needs. Thumbs rarely roll into neighbours, so the usual argument
+        // for "balanced" (used above for the home row) does not apply here.
+        //
+        // quick-tap-ms forces a second press within the window to resolve as a
+        // TAP rather than a hold. That is what lets a held backspace repeat, so
+        // it belongs on the Num thumb -- but it is measured from the first press
+        // and cannot be scoped to only the case you want, which is why the two
+        // thumbs need separate behaviors.
+        ltt: layer_tap_thumb {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "hold-preferred";
+            tapping-term-ms = <TAPPING_TERM_MS>;
+            quick-tap-ms = <QUICK_TAP_MS>;
+            bindings = <&mo>, <&kp>;
+        };
+
+        // Same, minus quick-tap. For a tap key that has no use for auto-repeat
+        // (escape), the window is pure cost: it would turn "tap escape, then hold
+        // for the layer" into a second escape, blocking the layer until it
+        // expires. Omitting quick-tap-ms restores ZMK's default of disabled.
+        ltt_norepeat: layer_tap_thumb_norepeat {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "hold-preferred";
+            tapping-term-ms = <TAPPING_TERM_MS>;
+            bindings = <&mo>, <&kp>;
+        };
     };
 };

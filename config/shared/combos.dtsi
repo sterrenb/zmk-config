@@ -19,12 +19,12 @@
     require-prior-idle-ms = <COMBO_PRIOR_IDLE_MS>; \
   };
 
-#define COMBO_RAISE(NAME, BINDINGS, KEYPOS) \
+#define COMBO_NUM(NAME, BINDINGS, KEYPOS) \
   combo_##NAME { \
     timeout-ms = <COMBO_TERM_DEFAULT>; \
     bindings = <BINDINGS>; \
     key-positions = <KEYPOS>; \
-    layers = <RAISE>; \
+    layers = <NUM>; \
     require-prior-idle-ms = <COMBO_PRIOR_IDLE_MS>; \
   };
 
@@ -75,12 +75,12 @@
         COMBO_BASE(excl_right, &kp EXCL, 10 22)
         COMBO_BASE(qmark, &kp QUESTION, 22 34)
         
-        COMBO_RAISE(bt_clear, &bt BT_CLR, 11 23)
-        COMBO_RAISE(bt_sel_0, &bt BT_SEL 0, 6 18)
-        COMBO_RAISE(bt_sel_1, &bt BT_SEL 1, 7 19)
-        COMBO_RAISE(bt_sel_2, &bt BT_SEL 2, 8 20)
-        COMBO_RAISE(bt_sel_3, &bt BT_SEL 3, 9 21)
-        COMBO_RAISE(bt_sel_4, &bt BT_SEL 4, 10 22)
+        COMBO_NUM(bt_clear, &bt BT_CLR, 11 23)
+        COMBO_NUM(bt_sel_0, &bt BT_SEL 0, 6 18)
+        COMBO_NUM(bt_sel_1, &bt BT_SEL 1, 7 19)
+        COMBO_NUM(bt_sel_2, &bt BT_SEL 2, 8 20)
+        COMBO_NUM(bt_sel_3, &bt BT_SEL 3, 9 21)
+        COMBO_NUM(bt_sel_4, &bt BT_SEL 4, 10 22)
 
         // Media
         COMBO_BASE(volume_up, &kp C_VOL_UP, 11 23)
