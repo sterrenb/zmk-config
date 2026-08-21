@@ -2,10 +2,33 @@ manifest:
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
+    - name: beekeeb
+      url-base: https://github.com/beekeeb
+    - name: caksoylar
+      url-base: https://github.com/caksoylar
   projects:
     - name: zmk
       remote: zmkfirmware
       revision: v0.3
       import: app/west.yml
+
+    # Toucan2 hardware definitions. Pinned to a SHA rather than `main`, so a
+    # tagged release cannot change behaviour without a commit in this repo.
+    # Provides boards/shields/{toucan,nice_view_gem}.
+    - name: zmk-keyboard-toucan2
+      remote: beekeeb
+      revision: 6882c95bec5be89988e90feb621f78a7511e9ed7
+    # Azoteq TPS43 trackpad driver (Toucan2 right half).
+    - name: zmk_driver_azoteq
+      remote: beekeeb
+      revision: 52fcfe5026c9f74d611d05b2084548e046a7e274
+    # zmk,input-processor-zoom, used by the trackpad's pinch-to-zoom.
+    - name: zmk-input-zoom
+      remote: beekeeb
+      revision: 91bbe0c0e02145da50c9df798489479d28be1804
+    # Provides the rgbled_adapter shield used by both Toucan2 halves.
+    - name: zmk-rgbled-widget
+      remote: caksoylar
+      revision: v0.3
   self:
     path: config

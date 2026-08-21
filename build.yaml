@@ -19,10 +19,29 @@
 #
 ---
 include:
+  # Corne (Typeractive) — standalone
   - board: nice_nano_v2
     shield: corne_left nice_view_adapter nice_view
     snippet: studio-rpc-usb-uart
+    artifact-name: corne_left
   - board: nice_nano_v2
     shield: corne_right nice_view_adapter nice_view
+    artifact-name: corne_right
+
+  # Toucan2 (beekeeb) — standalone
+  # ZMK Studio comes from config/toucan.conf, matching how corne.conf does it.
+  - board: seeeduino_xiao_ble
+    shield: toucan_left rgbled_adapter nice_view_gem
+    snippet: studio-rpc-usb-uart
+    artifact-name: toucan2_left
+  - board: seeeduino_xiao_ble
+    shield: toucan_right rgbled_adapter
+    artifact-name: toucan2_right
+
+  # Settings reset — board-specific, so one per MCU
   - board: nice_nano_v2
     shield: settings_reset
+    artifact-name: corne_settings_reset
+  - board: seeeduino_xiao_ble
+    shield: settings_reset
+    artifact-name: toucan2_settings_reset

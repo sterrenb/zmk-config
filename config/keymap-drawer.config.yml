@@ -92,6 +92,11 @@ parse_config:
   raw_binding_map:
     "&caps_word": $$mdi:format-letter-case-upper$$
     "&capitalize_i": "Cap I"
+    # keymap-drawer has no built-in handling for &mkp; without these the Mouse
+    # layer renders the literal binding text.
+    "&mkp LCLK": $$mdi:mouse-left-click-outline$$
+    "&mkp RCLK": $$mdi:mouse-right-click-outline$$
+    "&mkp MCLK": $$mdi:mouse$$
     "&mo 1": $$material:arrow_circle_down$$
     "&mo 2": $$material:arrow_circle_up$$
     "&mo LOWER": $$material:arrow_circle_down$$
