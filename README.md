@@ -53,6 +53,18 @@ The firmware and diagrams are built via GitHub Actions workflow. Each release at
 | `corne_settings_reset.uf2` | Corne, to clear stored settings |
 | `toucan2_settings_reset.uf2` | Toucan2, to clear stored settings |
 
+Alongside the zip it attaches the keymap diagram as it stood at that version, as
+`keymap-<version>.svg` and `keymap-<version>.png` — the SVG the site uses, plus a
+light-themed 2x render of it for anywhere an SVG is awkward. The diagram in this README
+always tracks `main`, so the release assets are the only record of what the keymap looked
+like on an older firmware.
+
+Both are self-identifying: the base layer's label is the version, in the gutter where the
+other layers print their name, because that layer's display-name *is* `KEYMAP_VERSION`. A
+diagram that has been saved, pasted or printed still says which firmware it belongs to, and
+the release workflow refuses to attach one whose label does not match the version being
+released.
+
 The version shown on each keyboard's display while on the base layer is stamped into
 [`config/shared/version.dtsi`](./config/shared/version.dtsi) by the release workflow — that is
 how you tell which firmware a board is running.

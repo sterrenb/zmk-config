@@ -29,9 +29,12 @@ draw_config:
         display: none;
     }
 
-    g[class^="layer-"]:first-of-type .label {
-        display: none;
-    }
+    /* The base layer's label is deliberately left visible: its display-name is
+       KEYMAP_VERSION (config/shared/version.dtsi), so the diagram states which
+       version it documents. release.yml attaches this SVG and a PNG of it to
+       every release, where that stamp is the whole point -- do not hide it
+       again without giving the release assets another way to identify
+       themselves. It lands in the gutter between the two base-layer combos. */
 
     .combo.shifted {
       translate: -6px 1px;
