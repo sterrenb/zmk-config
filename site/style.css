@@ -85,6 +85,7 @@ body {
    Wraps rather than squeezing: at 320px the two children still fit, but a
    longer heading or a translated label must not push the control off. */
 header {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
@@ -93,7 +94,9 @@ header {
   width: 100%;
   max-width: var(--max);
   margin: 0 auto;
-  padding: 12px 10px 2px;
+  /* Top only: matches main's side padding and leaves the gap between the
+     heading and the diagram to main. */
+  padding: 16px 10px 0;
 }
 
 h1 {
@@ -101,6 +104,95 @@ h1 {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: .01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kb-version-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.kb-version-badge:hover,
+.kb-version-badge:focus-visible {
+  color: var(--link);
+  border-color: var(--link);
+  background: var(--surface);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hidden by default in HTML so that without JS (or before it runs) there is
+   no dead button. main.js flips hidden=false once wired. */
+.theme,
+.tip-mode {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.theme[hidden],
+.tip-mode[hidden] {
+  display: none;
+}
+
+/* Tooltip mode is desktop only: on touch screens hover does not exist, so the
+   control would offer a choice between "click" and "broken". */
+@media (pointer: coarse) {
+  .tip-mode {
+    display: none !important;
+  }
+}
+
+.theme button,
+.tip-mode button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.theme button:hover,
+.tip-mode button:hover {
+  color: var(--fg);
+}
+
+.theme button:focus-visible,
+.tip-mode button:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 1px;
+}
+
+.theme button[aria-pressed="true"],
+.tip-mode button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 1px 2px var(--shadow);
 }
 
 main {
@@ -109,18 +201,15 @@ main {
   max-width: var(--max);
   margin: 0 auto;
   /* Half the desktop padding: enough to keep the diagram off the screen
-     edges without wasting width on a phone. The header above supplies the
-     gap at the top. */
+     edges without wasting width on a phone. */
   padding: 8px 10px 0;
 }
 
-/* One focus ring for everything interactive. A colour or background change
-   alone is not a focus indicator: it disappears against the hover state and
-   is easy to miss. */
-a:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--link);
-  outline-offset: 2px;
+/* Focus outline for individual interactive keys in SVG */
+g.key:focus-visible rect,
+g.combo:focus-visible rect {
+  stroke: var(--link) !important;
+  stroke-width: 2px !important;
 }
 
 /* The SVG is 840x1433, so width:100% keeps it readable on a phone and the
@@ -130,9 +219,6 @@ button:focus-visible {
   width: 100%;
   height: auto;
   margin: 0 auto;
-  /* Key legends are text nodes, so clicking a key would otherwise start a
-     text selection and drag-select the diagram. Tooltip contents stay
-     selectable -- this is scoped to the diagram only. */
   -webkit-user-select: none;
   user-select: none;
 }
@@ -155,55 +241,29 @@ button:focus-visible {
   r: 4.5;
 }
 
-/* --- documented combos ----------------------------------------------- */
+/* --- combo highlights ------------------------------------------------- */
 
 .kb-combo-doc {
   cursor: pointer;
 }
 
-.kb-combo-dot {
-  fill: var(--link);
-  pointer-events: none;
+.kb-combo-doc rect.combo {
+  stroke: var(--link);
+  stroke-width: 1.5;
 }
 
-.kb-combo-doc:hover .kb-combo-dot,
-.kb-combo-doc.kb-open .kb-combo-dot {
-  r: 1.8;
-}
-
-.kb-combo-doc:hover rect.combo,
 .kb-combo-doc.kb-open rect.combo {
-  stroke: var(--link);
-  stroke-width: 1.5;
+  stroke-width: 2;
 }
 
-.kb-combo-doc:hover path.combo,
-.kb-combo-doc.kb-open path.combo {
-  stroke: var(--link);
-  stroke-width: 1.5;
-}
-
-.kb-doc:focus-visible rect.key {
+/* Highlights for combo source keys and group peer keys (e.g. Home Row Mods) */
+.kb-source rect.key,
+.kb-group-peer rect.key {
   stroke: var(--link) !important;
-  stroke-width: 2px !important;
+  stroke-width: 1.5 !important;
+  stroke-dasharray: 4 3 !important;
 }
 
-.kb-combo-doc:focus-visible rect.combo,
-.kb-combo-doc:focus-visible path.combo {
-  stroke: var(--link) !important;
-  stroke-width: 2px !important;
-}
-
-svg g.kb-doc:focus,
-svg g.kb-combo-doc:focus {
-  outline: none;
-}
-
-.kb-combo-source rect.key {
-  stroke: var(--link) !important;
-  stroke-width: 2px !important;
-  stroke-dasharray: 4 3;
-}
 
 /* --- tooltip ---------------------------------------------------------- */
 
@@ -228,6 +288,25 @@ svg g.kb-combo-doc:focus {
   margin: 0 0 6px;
   font-size: 14px;
   color: var(--strong);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kb-zmk-doc-link {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.kb-zmk-doc-link:hover,
+.kb-zmk-doc-link:focus-visible {
+  color: var(--link);
 }
 
 .kb-tip p {
@@ -250,21 +329,6 @@ svg g.kb-combo-doc:focus {
   color: var(--muted);
 }
 
-.kb-tip kbd {
-  display: inline-block;
-  vertical-align: baseline;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-bottom-width: 2px;
-  border-radius: 4px;
-  padding: 0 4px;
-  font: inherit;
-  font-size: 11.5px;
-  line-height: 1.35;
-  color: var(--strong);
-  white-space: nowrap;
-}
-
 .kb-keys {
   margin: 0 0 8px;
   display: flex;
@@ -274,16 +338,14 @@ svg g.kb-combo-doc:focus {
 }
 
 .kb-keys kbd {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
   padding: 1px 6px;
+  font: inherit;
   font-size: 12px;
-}
-
-.kb-inline-chord {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  white-space: nowrap;
-  vertical-align: baseline;
+  color: var(--strong);
 }
 
 .kb-tip ul {
@@ -294,122 +356,10 @@ svg g.kb-combo-doc:focus {
 
 .kb-tip a {
   color: var(--link);
-  pointer-events: auto;
-  cursor: pointer;
 }
 
-.kb-tip-doc {
-  position: absolute;
-  right: 8px;
-  bottom: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  color: var(--muted);
-  opacity: 0.6;
-  text-decoration: none;
-  pointer-events: auto;
-  cursor: pointer;
-  z-index: 2;
-  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
-}
+/* --- download floating toolbar ---------------------------------------- */
 
-.kb-tip-doc:hover {
-  opacity: 1;
-  color: var(--link);
-  background: var(--surface-2);
-  transform: scale(1.08);
-}
-
-footer {
-  flex-shrink: 0;
-  border-top: 1px solid var(--rule);
-  margin-top: 32px;
-  padding: 20px 16px 28px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-footer a {
-  color: var(--link);
-  text-decoration: none;
-}
-
-footer a:hover,
-footer a:focus-visible {
-  text-decoration: underline;
-}
-
-.controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* --- mode & theme controls --------------------------------------------- */
-
-.theme,
-.tip-mode {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-2);
-}
-
-.tip-mode {
-  display: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .tip-mode {
-    display: inline-flex;
-  }
-}
-
-/* 30x26 clears the 24x24 minimum for a pointer target; coarse pointers get
-   more below. */
-.theme button,
-.tip-mode button {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 26px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: none;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.theme button:hover,
-.theme button:focus-visible,
-.tip-mode button:hover,
-.tip-mode button:focus-visible {
-  color: var(--fg);
-}
-
-/* aria-pressed is the state, so style from it rather than a parallel class:
-   one source of truth for "which theme is on". */
-.theme button[aria-pressed="true"],
-.tip-mode button[aria-pressed="true"] {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--strong);
-}
-
-/* --- download control -------------------------------------------------- */
-
-/* Floats rather than sitting in the flow: the diagram is 1433px tall, so a
-   control placed above or below it is off screen for most of the scroll.
-   Under .kb-tip's z-index, so an open tooltip is never covered by it. */
 .kb-dl {
   position: fixed;
   z-index: 5;
@@ -458,9 +408,6 @@ footer a:focus-visible {
   cursor: progress;
 }
 
-/* Only once JS is driving it: the class is added by the script, so with JS
-   off the control simply stays put rather than being stuck hidden.
-   visibility, not display, so it leaves the tab order while hidden. */
 .kb-dl-auto {
   visibility: hidden;
   opacity: 0;
@@ -474,35 +421,42 @@ footer a:focus-visible {
   transform: none;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kb-dl-auto {
-    transition: none;
-  }
+footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--rule);
+  margin-top: 32px;
+  padding: 20px 16px 28px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
 }
 
-/* Touch targets, not hover targets. */
+footer a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+footer a:hover,
+footer a:focus-visible {
+  text-decoration: underline;
+}
+
 @media (pointer: coarse) {
 
   .kb-dl a,
   .kb-dl button {
     padding: 8px 12px;
   }
-
-  .theme button,
-  .tip-mode button {
-    width: 38px;
-    height: 32px;
-  }
 }
 
 /* Breathing room only once there is room to spare. */
 @media (min-width: 880px) {
   header {
-    padding: 24px 20px 4px;
+    padding: 24px 20px 0;
   }
 
   main {
-    padding: 12px 20px 0;
+    padding: 16px 20px 0;
   }
 
   .kb-dl {

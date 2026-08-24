@@ -56,11 +56,6 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   const svg = parsed.documentElement;
   if (!svg || svg.nodeName !== 'svg') return;
 
-  // Unwrap layer navigation <a> tags so they don't hijack clicks or jump the page
-  for (const a of svg.querySelectorAll('a[href^="#"]')) {
-    a.replaceWith(...a.childNodes);
-  }
-
   // Let CSS drive the size; the viewBox preserves the aspect ratio.
   svg.removeAttribute('width');
   svg.removeAttribute('height');
@@ -70,9 +65,22 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   const NS = 'http://www.w3.org/2000/svg';
   const layers = svg.querySelectorAll(':scope > g[class^="layer-"]');
   const targets = new Map();
-  const groupPeers = new Map();
 
-  for (const [slot, id] of Object.entries(data.keys)) {
+  // Extract stamped version from base layer (e.g. "1.3.1")
+  const baseLayer = layers[0];
+  const match = baseLayer?.getAttribute('class')?.match(/layer-([0-9]+\.[0-9]+\.[0-9]+)/);
+  const version = match ? match[1] : null;
+
+  // Update header release badge
+  const badge = document.getElementById('kb-version-badge');
+  if (badge && version) {
+    badge.textContent = `v${version}`;
+    badge.href = `https://github.com/sterrenb/zmk-config/releases/tag/v${version}`;
+    badge.title = `View Release v${version} on GitHub`;
+  }
+
+  // Key tooltips
+  for (const [slot, id] of Object.entries(data.keys || {})) {
     const [layerIndex, keyIndex] = slot.split('.');
     const key = layers[layerIndex]?.querySelector(`.keypos-${keyIndex}`);
     if (!key || !data.content[id]) continue;
@@ -80,7 +88,11 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
     key.classList.add('kb-doc');
     key.setAttribute('tabindex', '0');
     key.setAttribute('role', 'button');
-    key.setAttribute('aria-label', data.content[id]?.title ? `${data.content[id].title} key details` : 'Key details');
+    key.setAttribute('aria-haspopup', 'dialog');
+    if (data.content[id].title) {
+      key.setAttribute('aria-label', data.content[id].title);
+    }
+
     // Bottom-right of the 53x53 key, which spans -26..27 on both axes.
     const dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('cx', '19');
@@ -88,60 +100,65 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
     dot.setAttribute('r', '3');
     dot.setAttribute('class', 'kb-dot');
     key.appendChild(dot);
-    targets.set(key, { id, layerIndex: Number(layerIndex) });
+    targets.set(key, { id, isCombo: false });
   }
 
-  // Index group peers per layer
-  for (const [key, { id, layerIndex }] of targets.entries()) {
-    if (!data.content[id]?.group) continue;
-    const peers = [];
-    for (const [otherKey, otherTarget] of targets.entries()) {
-      if (otherTarget.layerIndex === layerIndex && otherTarget.id === id) {
-        peers.push(otherKey);
-      }
-    }
-    if (peers.length > 1) {
-      groupPeers.set(key, peers);
+  // Combo tooltips
+  const basePositions = {};
+  if (layers[0]) {
+    for (const key of layers[0].querySelectorAll('[class*="keypos-"]')) {
+      const m = key.className.baseVal.match(/keypos-(\d+)/);
+      if (m) basePositions[m[1]] = key;
     }
   }
 
-  // Resolve combos
-  const comboTargets = new Map();
-  if (data.combos) {
-    for (const [comboIndex, comboData] of Object.entries(data.combos)) {
-      const comboEl = svg.querySelector(`.combopos-${comboIndex}`);
-      const id = typeof comboData === 'string' ? comboData : comboData.id;
-      const positions = comboData.positions || [];
-      if (!comboEl || !data.content[id]) continue;
+  for (const [comboIndex, { id, positions }] of Object.entries(data.combos || {})) {
+    const combo = svg.querySelector(`.combopos-${comboIndex}`);
+    if (!combo || !data.content[id]) continue;
 
-      comboEl.classList.add('kb-combo-doc');
-      comboEl.setAttribute('tabindex', '0');
-      comboEl.setAttribute('role', 'button');
-      comboEl.setAttribute('aria-label', data.content[id]?.title ? `${data.content[id].title} combo details` : 'Combo details');
-      const rect = comboEl.querySelector('rect.combo');
-      if (rect) {
-        const rx = parseFloat(rect.getAttribute('x'));
-        const ry = parseFloat(rect.getAttribute('y'));
-        const rw = parseFloat(rect.getAttribute('width'));
-        const rh = parseFloat(rect.getAttribute('height')) || rw;
-        const dot = document.createElementNS(NS, 'circle');
-        dot.setAttribute('cx', String(rx + rw - 4));
-        dot.setAttribute('cy', String(ry + rh - 4));
-        dot.setAttribute('r', '1.5');
-        dot.setAttribute('class', 'kb-combo-dot');
-        comboEl.appendChild(dot);
-      }
-      comboTargets.set(comboEl, { id, positions });
+    combo.classList.add('kb-combo-doc');
+    combo.setAttribute('tabindex', '0');
+    combo.setAttribute('role', 'button');
+    combo.setAttribute('aria-haspopup', 'dialog');
+    if (data.content[id].title) {
+      combo.setAttribute('aria-label', data.content[id].title);
     }
+
+    const sourceKeys = (positions || []).map((pos) => basePositions[pos]).filter(Boolean);
+    targets.set(combo, { id, isCombo: true, sourceKeys });
   }
 
-  /* ---- renderer boundary ------------------------------------------- */
+  /* ---- tooltip & highlights ---------------------------------------- */
   const tip = document.createElement('div');
   tip.className = 'kb-tip';
   tip.hidden = true;
   document.body.appendChild(tip);
   let openTarget = null;
   let activeSources = [];
+  let activePeers = [];
+  let leaveTimeout = null;
+  let openTimeout = null;
+
+  const cancelLeave = () => {
+    if (leaveTimeout) {
+      clearTimeout(leaveTimeout);
+      leaveTimeout = null;
+    }
+  };
+
+  const cancelOpen = () => {
+    if (openTimeout) {
+      clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+  };
+
+  const scheduleLeave = () => {
+    cancelLeave();
+    leaveTimeout = setTimeout(() => {
+      close();
+    }, 120);
+  };
 
   const el = (tag, text, parent) => {
     const node = document.createElement(tag);
@@ -150,39 +167,22 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
     return node;
   };
 
-  function renderParagraph(text, parent) {
-    const p = document.createElement('p');
-    const parts = text.split(/(`[^`]+`)/g);
-    for (const part of parts) {
-      if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
-        const inner = part.slice(1, -1);
-        if (inner.includes('+')) {
-          const chord = inner.split('+');
-          const span = document.createElement('span');
-          span.className = 'kb-inline-chord';
-          chord.forEach((k, idx) => {
-            if (idx > 0) span.appendChild(document.createTextNode('+'));
-            const kbd = document.createElement('kbd');
-            kbd.textContent = k.trim();
-            span.appendChild(kbd);
-          });
-          p.appendChild(span);
-        } else {
-          const kbd = document.createElement('kbd');
-          kbd.textContent = inner;
-          p.appendChild(kbd);
-        }
-      } else if (part) {
-        p.appendChild(document.createTextNode(part));
-      }
-    }
-    parent.appendChild(p);
-    return p;
-  }
-
   function render(content) {
     tip.textContent = '';
-    if (content.title) el('h2', content.title, tip);
+    if (content.title) {
+      const h2 = el('h2', null, tip);
+      el('span', content.title, h2);
+      if (content.zmkDoc) {
+        const docLink = el('a', null, h2);
+        docLink.className = 'kb-zmk-doc-link';
+        docLink.href = content.zmkDoc;
+        docLink.target = '_blank';
+        docLink.rel = 'noopener noreferrer';
+        docLink.title = 'View official ZMK documentation';
+        docLink.setAttribute('aria-label', 'ZMK Documentation');
+        docLink.innerHTML = `<svg class="icon" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Zm7.251 10.324.004-5.073-.002-2.253A2.25 2.25 0 0 0 5.003 2.5H1.5v9h3.757a3.75 3.75 0 0 1 1.994.574ZM8.755 4.75l-.004 7.322a3.752 3.752 0 0 1 1.992-.572H14.5v-9h-3.495a2.25 2.25 0 0 0-2.25 2.25Z"/></svg>`;
+      }
+    }
     if (content.keys) {
       const row = el('div', null, tip);
       row.className = 'kb-keys';
@@ -191,9 +191,19 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
         el('kbd', k, row);
       });
     }
-    if (content.body) renderParagraph(content.body, tip);
+    if (content.body) {
+      const p = el('p', null, tip);
+      const parts = content.body.split(/(`[^`]+`)/g);
+      for (const part of parts) {
+        if (part.startsWith('`') && part.endsWith('`')) {
+          el('kbd', part.slice(1, -1), p);
+        } else if (part) {
+          p.appendChild(document.createTextNode(part));
+        }
+      }
+    }
     if (content.pre) el('pre', content.pre, tip);
-    if (content.links) {
+    if (content.links && content.links.length > 0) {
       const list = el('ul', null, tip);
       for (const link of content.links) {
         const a = el('a', link.text, el('li', null, list));
@@ -202,25 +212,10 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
         a.rel = 'noopener noreferrer';
       }
     }
-    if (content.zmkDoc) {
-      const a = document.createElement('a');
-      a.className = 'kb-tip-doc';
-      a.href = content.zmkDoc;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.title = 'ZMK documentation';
-      a.setAttribute('aria-label', 'ZMK documentation');
-      a.innerHTML =
-        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>' +
-        '<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>' +
-        '</svg>';
-      tip.appendChild(a);
-    }
   }
 
-  function place(key) {
-    const box = key.getBoundingClientRect();
+  function place(target) {
+    const box = target.getBoundingClientRect();
     const self = tip.getBoundingClientRect();
     const pad = 8;
     let left = box.left + box.width / 2 - self.width / 2;
@@ -228,56 +223,56 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
     let top = box.bottom + pad;
     if (top + self.height > innerHeight - pad) top = box.top - self.height - pad;
     top = Math.max(pad, top);
-    // Page coordinates, so the tooltip stays anchored while scrolling.
     tip.style.left = `${left + scrollX}px`;
     tip.style.top = `${top + scrollY}px`;
   }
 
-  function clearHighlights() {
-    for (const element of activeSources) {
-      element.classList.remove('kb-combo-source');
-    }
-    activeSources = [];
-  }
-
   function close() {
+    cancelLeave();
+    cancelOpen();
     tip.hidden = true;
     openTarget?.classList.remove('kb-open');
     openTarget = null;
     clearHighlights();
   }
 
-  function open(element, contentId, sourcePositions = [], peerKeys = []) {
-    close();
-    render(data.content[contentId]);
-    tip.hidden = false;
-    place(element);
-    openTarget = element;
-    element.classList.add('kb-open');
+  function clearHighlights() {
+    for (const key of activeSources) key.classList.remove('kb-source');
+    activeSources = [];
+    for (const key of activePeers) key.classList.remove('kb-group-peer');
+    activePeers = [];
+  }
 
-    if (sourcePositions.length > 0) {
-      const baseLayer = layers[0];
-      if (baseLayer) {
-        for (const pos of sourcePositions) {
-          const keyEl = baseLayer.querySelector(`.keypos-${pos}`);
-          if (keyEl) {
-            keyEl.classList.add('kb-combo-source');
-            activeSources.push(keyEl);
+  function open(target) {
+    cancelLeave();
+    const meta = targets.get(target);
+    if (!meta) return;
+
+    render(data.content[meta.id]);
+    tip.hidden = false;
+    place(target);
+    openTarget = target;
+    target.classList.add('kb-open');
+
+    clearHighlights();
+
+    if (meta.isCombo && meta.sourceKeys) {
+      for (const key of meta.sourceKeys) key.classList.add('kb-source');
+      activeSources = meta.sourceKeys;
+    } else if (data.content[meta.id]?.group) {
+      const layerG = target.closest('g[class^="layer-"]');
+      if (layerG) {
+        for (const [k, m] of targets.entries()) {
+          if (m.id === meta.id && layerG.contains(k)) {
+            k.classList.add('kb-group-peer');
+            activePeers.push(k);
           }
         }
       }
     }
-
-    if (peerKeys.length > 0) {
-      for (const peer of peerKeys) {
-        peer.classList.add('kb-combo-source');
-        activeSources.push(peer);
-      }
-    }
   }
 
-  /* Tooltip trigger mode: 'hover' vs 'click' */
-  const isDesktopHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  /* ---- interaction controller --------------------------------------- */
   let tipMode = 'hover';
   try {
     const saved = localStorage.getItem('tip-mode');
@@ -285,115 +280,72 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   } catch (e) { }
 
   const modeGroup = document.querySelector('.tip-mode');
-  if (modeGroup && isDesktopHover) {
-    const modeButtons = [...modeGroup.querySelectorAll('[data-tip-choice]')];
-    const syncMode = () => {
-      for (const btn of modeButtons) {
+  if (modeGroup) {
+    const buttons = [...modeGroup.querySelectorAll('[data-tip-choice]')];
+    const sync = () => {
+      for (const btn of buttons) {
         btn.setAttribute('aria-pressed', String(btn.dataset.tipChoice === tipMode));
       }
     };
-
-    for (const btn of modeButtons) {
+    for (const btn of buttons) {
       btn.addEventListener('click', () => {
-        const choice = btn.dataset.tipChoice;
-        if (choice !== 'hover' && choice !== 'click') return;
-        tipMode = choice;
+        tipMode = btn.dataset.tipChoice;
         try {
-          localStorage.setItem('tip-mode', choice);
+          localStorage.setItem('tip-mode', tipMode);
         } catch (e) { }
-        syncMode();
+        sync();
         close();
       });
     }
-
-    syncMode();
+    sync();
     modeGroup.hidden = false;
   }
 
-  let closeTimer = null;
-  const scheduleClose = (delay = 120) => {
-    clearTimeout(closeTimer);
-    closeTimer = setTimeout(close, delay);
-  };
-
-  const cancelClose = () => {
-    clearTimeout(closeTimer);
-  };
-
-  tip.addEventListener('pointerenter', () => {
-    if (isDesktopHover && tipMode === 'hover') cancelClose();
-  });
-  tip.addEventListener('pointerleave', (event) => {
-    if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
-      scheduleClose();
+  tip.addEventListener('mouseenter', () => {
+    if (tipMode === 'hover') {
+      cancelLeave();
+      cancelOpen();
     }
   });
+  tip.addEventListener('mouseleave', () => {
+    if (tipMode === 'hover') scheduleLeave();
+  });
 
-  for (const [key, { id }] of targets.entries()) {
-    const peers = groupPeers.get(key) || [];
-    key.addEventListener('click', (event) => {
-      event.stopPropagation();
-      cancelClose();
-      const wasOpen = openTarget === key;
-      close();
-      if (!wasOpen) open(key, id, [], peers);
+  for (const target of targets.keys()) {
+    target.addEventListener('mouseenter', () => {
+      cancelLeave();
+      cancelOpen();
+      if (tipMode === 'hover') {
+        if (openTarget) {
+          // Delay opening so the cursor can cross an intermediate key on its
+          // way to the currently open tooltip without losing it.
+          openTimeout = setTimeout(() => {
+            openTimeout = null;
+            open(target);
+          }, 150);
+        } else {
+          open(target);
+        }
+      }
     });
 
-    key.addEventListener('keydown', (event) => {
+    target.addEventListener('mouseleave', () => {
+      if (tipMode === 'hover') scheduleLeave();
+    });
+
+    const toggle = (event) => {
+      event.stopPropagation();
+      const wasOpen = openTarget === target;
+      close();
+      if (!wasOpen) open(target);
+    };
+
+    target.addEventListener('click', toggle);
+
+    target.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        event.stopPropagation();
-        cancelClose();
-        const wasOpen = openTarget === key;
-        close();
-        if (!wasOpen) open(key, id, [], peers);
-      }
-    });
-
-    key.addEventListener('pointerenter', (event) => {
-      if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
-        cancelClose();
-        open(key, id, [], peers);
-      }
-    });
-
-    key.addEventListener('pointerleave', (event) => {
-      if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
-        scheduleClose();
-      }
-    });
-  }
-
-  for (const [comboEl, { id, positions }] of comboTargets.entries()) {
-    comboEl.addEventListener('click', (event) => {
-      event.stopPropagation();
-      cancelClose();
-      const wasOpen = openTarget === comboEl;
-      close();
-      if (!wasOpen) open(comboEl, id, positions);
-    });
-
-    comboEl.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        event.stopPropagation();
-        cancelClose();
-        const wasOpen = openTarget === comboEl;
-        close();
-        if (!wasOpen) open(comboEl, id, positions);
-      }
-    });
-
-    comboEl.addEventListener('pointerenter', (event) => {
-      if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
-        cancelClose();
-        open(comboEl, id, positions);
-      }
-    });
-
-    comboEl.addEventListener('pointerleave', (event) => {
-      if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
-        scheduleClose();
+        toggle(event);
       }
     });
   }
@@ -404,20 +356,21 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') close();
   });
+
+  /* ---- download controls -------------------------------------------- */
+  initDownloads(version, keymapSvgRaw);
 })();
 
 /* ==========================================================================
-   Download Controller (SVG & On-the-Fly PNG Rasterizer)
+   Downloads Controller
    ========================================================================== */
-(function initDownloads() {
+function initDownloads(version, svgMarkup) {
   const box = document.querySelector('.kb-dl');
   const svgLink = box?.querySelector('a[download]');
   const frame = document.querySelector('main');
   if (!box || !svgLink || !frame) return;
 
-  const SCALE = 2; // 1680x2866
-
-  const markup = () => Promise.resolve(keymapSvgRaw);
+  const SCALE = 2;
 
   function stem(svg) {
     const match = svg.match(/<g[^>]*class="layer-([^"]*)"/);
@@ -444,6 +397,8 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
         canvas.height = image.naturalHeight * SCALE;
 
         const ctx = canvas.getContext('2d');
+        // White fill so the PNG has an opaque background regardless of the
+        // active theme — dark-on-transparent looks broken in most apps.
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -454,12 +409,17 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
 
       image.onerror = () => {
         URL.revokeObjectURL(url);
-        reject(new Error('could not load the diagram'));
+        reject(new Error('could not load diagram'));
       };
 
       image.src = url;
     });
   }
+
+  // Replace the static href with the build-inlined SVG so the download works
+  // in production, where the original relative path is not deployed.
+  svgLink.href = URL.createObjectURL(new Blob([svgMarkup], { type: 'image/svg+xml' }));
+  svgLink.download = `${stem(svgMarkup)}.svg`;
 
   const png = document.createElement('button');
   png.type = 'button';
@@ -471,8 +431,7 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
     png.disabled = true;
     png.textContent = '...';
     try {
-      const svg = await markup();
-      save(await rasterise(svg), `${stem(svg)}.png`);
+      save(await rasterise(svgMarkup), `${stem(svgMarkup)}.png`);
       png.textContent = 'PNG';
     } catch {
       png.textContent = 'failed';
@@ -482,17 +441,21 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
     }
   });
 
+  // Add direct Firmware download link
+  if (version) {
+    const fwLink = document.createElement('a');
+    fwLink.href = `https://github.com/sterrenb/zmk-config/releases/download/v${version}/firmware-v${version}.zip`;
+    fwLink.textContent = 'Firmware';
+    fwLink.title = `Download firmware-v${version}.zip (.uf2 files)`;
+    fwLink.setAttribute('aria-label', `Download firmware v${version}`);
+    box.appendChild(fwLink);
+  }
+
   if (!('IntersectionObserver' in window)) return;
 
   box.classList.add('kb-dl-auto', 'kb-dl-on');
 
   new IntersectionObserver(([entry]) => {
     box.classList.toggle('kb-dl-on', entry.isIntersecting);
-    if (entry.isIntersecting) {
-      markup()
-        .then((svg) => (svgLink.download = `${stem(svg)}.svg`))
-        .catch(() => { });
-    }
   }).observe(frame);
-})();
-
+}

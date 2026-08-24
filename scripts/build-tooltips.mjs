@@ -1,6 +1,6 @@
 // Resolve tooltip definitions against the keymap and emit a flat lookup table.
 //
-//     node scripts/build-tooltips.mjs [outfile]     (default: dist/tooltips.json)
+//     node scripts/build-tooltips.mjs [outfile]     (default: site/tooltips.json)
 //
 // Definitions in site/tooltips.mjs match on BINDING, never on key position, so
 // they survive layout changes. This script does the binding -> position lookup
@@ -18,7 +18,9 @@ import { fileURLToPath } from 'node:url';
 const root = new URL('..', import.meta.url);
 const keymapPath = fileURLToPath(new URL('config/shared/keymap.dtsi', root));
 const outFile = process.argv[2] ?? 'site/tooltips.json';
-const defaultSvg = existsSync('keymap-drawer/corne.local.svg') ? 'keymap-drawer/corne.local.svg' : 'keymap-drawer/corne.svg';
+const defaultSvg = existsSync(fileURLToPath(new URL('keymap-drawer/corne.local.svg', root)))
+  ? 'keymap-drawer/corne.local.svg'
+  : 'keymap-drawer/corne.svg';
 const svgPath = process.argv[3] ?? defaultSvg;
 
 const defs = (await import(new URL('site/tooltips.mjs', root))).default;
@@ -116,8 +118,8 @@ for (const [id, def] of Object.entries(defs)) {
 if (unmatched.length > 0) {
   throw new Error(
     'These tooltips match no key or combo in the current keymap:\n' +
-    unmatched.map((u) => `  - ${u}`).join('\n') +
-    '\nUpdate the "match" in site/tooltips.mjs, or remove the entry.'
+      unmatched.map((u) => `  - ${u}`).join('\n') +
+      '\nUpdate the "match" in site/tooltips.mjs, or remove the entry.'
   );
 }
 
@@ -187,5 +189,5 @@ const layerNames = layers.map((l) => l.name.replace(/_layer$/, '')).join(', ');
 const comboCount = Object.keys(comboMatches).length;
 console.log(
   `tooltips: ${Object.keys(content).length} definitions -> ${Object.keys(keys).length} keys, ` +
-  `${comboCount} combos across ${layers.length} layers (${layerNames}) -> ${outFile}`
+    `${comboCount} combos across ${layers.length} layers (${layerNames}) -> ${outFile}`
 );

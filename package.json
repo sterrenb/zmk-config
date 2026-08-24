@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:tooltips": "node scripts/build-tooltips.mjs site/tooltips.json",
     "dev": "npm run build:tooltips && vite",
+    "build:tooltips": "node scripts/build-tooltips.mjs site/tooltips.json",
     "build": "npm run build:tooltips && vite build",
     "preview": "vite preview"
   },

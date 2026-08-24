@@ -10,13 +10,13 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
-    target: 'es2022',
+    target: 'es2022'
   },
   server: {
     port: 8080,
     fs: {
-      allow: [resolve(__dirname, '.')],
-    },
+      allow: [resolve(__dirname, '.')]
+    }
   },
   plugins: [
     {
@@ -27,8 +27,7 @@ export default defineConfig({
         if (existsSync(headers)) {
           copyFileSync(headers, dest);
         }
-      },
-    },
-  ],
+      }
+    }
+  ]
 });
-
