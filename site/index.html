@@ -191,7 +191,7 @@
 
     .kb-combo-doc:hover .kb-combo-dot,
     .kb-combo-doc.kb-open .kb-combo-dot {
-      r: 3.5;
+      r: 1.8;
     }
 
     .kb-combo-doc:hover rect.combo,
@@ -200,10 +200,17 @@
       stroke-width: 1.5;
     }
 
+    .kb-combo-doc:hover path.combo,
+    .kb-combo-doc.kb-open path.combo {
+      stroke: var(--link);
+      stroke-width: 1.5;
+    }
+
     .kb-combo-source rect.key {
       stroke: var(--link) !important;
-      stroke-width: 2.5px !important;
+      stroke-width: 2px !important;
       stroke-dasharray: 4 3;
+      fill: #dbeafe !important;
     }
 
     /* --- tooltip ---------------------------------------------------------- */
@@ -693,10 +700,11 @@
             const rx = parseFloat(rect.getAttribute('x'));
             const ry = parseFloat(rect.getAttribute('y'));
             const rw = parseFloat(rect.getAttribute('width'));
+            const rh = parseFloat(rect.getAttribute('height')) || rw;
             const dot = document.createElementNS(NS, 'circle');
-            dot.setAttribute('cx', String(rx + rw - 3.5));
-            dot.setAttribute('cy', String(ry + 3.5));
-            dot.setAttribute('r', '2.2');
+            dot.setAttribute('cx', String(rx + rw - 4));
+            dot.setAttribute('cy', String(ry + rh - 4));
+            dot.setAttribute('r', '1.5');
             dot.setAttribute('class', 'kb-combo-dot');
             comboEl.appendChild(dot);
           }

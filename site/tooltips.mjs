@@ -249,12 +249,6 @@ export default {
       'Switches the keyboard to one of its five paired hosts. Only the central ' +
       'half talks to the computer; the peripheral keeps its own separate link ' +
       'to the central.',
-    links: [
-      {
-        text: 'ZMK bluetooth behaviour',
-        href: 'https://zmk.dev/docs/keymaps/behaviors/bluetooth',
-      },
-    ],
     zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/bluetooth',
   },
 
