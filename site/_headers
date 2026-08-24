@@ -7,8 +7,6 @@
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
 
-# Not content-hashed (index.html references it by fixed path), so it has to
-# revalidate rather than being cached immutably like /assets/*.
 # Unhashed fallback
 /tooltips.json
   Cache-Control: public, max-age=0, must-revalidate

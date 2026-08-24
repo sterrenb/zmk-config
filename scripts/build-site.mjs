@@ -63,15 +63,11 @@ mkdirSync(join(OUT_DIR, 'assets'), { recursive: true });
 // Hash the file contents, not the commit: a push that does not touch the diagram
 // must not invalidate it.
 const svg = readFileSync(srcSvg);
-const hash = createHash('sha256').update(svg).digest('hex').slice(0, 12);
-const asset = `assets/keymap.${hash}.svg`;
 const svgHash = createHash('sha256').update(svg).digest('hex').slice(0, 12);
 const svgAsset = `assets/keymap.${svgHash}.svg`;
 
-writeFileSync(join(OUT_DIR, asset), svg);
 writeFileSync(join(OUT_DIR, svgAsset), svg);
 
-const html = template.split(REMOTE_SVG).join(asset);
 // Resolve tooltip definitions (matched on binding) to key positions. Fails if a
 // definition no longer matches anything, or if the diagram is out of step with
 // the keymap, so a rebound key cannot silently orphan its tooltip.
@@ -94,7 +90,6 @@ html = html.split(TOOLTIPS_REF).join(tooltipsAsset);
 // while silently hotlinking GitHub and losing the immutable caching. Check both
 // directions rather than trusting the replace.
 if (html.includes(REMOTE_SVG)) die(`the remote diagram URL was not replaced in ${OUT_DIR}/index.html`);
-if (!html.includes(asset)) die(`${asset} is not referenced by ${OUT_DIR}/index.html`);
 if (!html.includes(svgAsset)) die(`${svgAsset} is not referenced by ${OUT_DIR}/index.html`);
 if (!html.includes(tooltipsAsset)) die(`${tooltipsAsset} is not referenced by ${OUT_DIR}/index.html`);
 
@@ -104,14 +99,4 @@ if (existsSync(join(SRC_DIR, '_headers'))) {
   copyFileSync(join(SRC_DIR, '_headers'), join(OUT_DIR, '_headers'));
 }
 
-// Resolve tooltip definitions (matched on binding) to key positions. Fails if a
-// definition no longer matches anything, or if the diagram is out of step with
-// the keymap, so a rebound key cannot silently orphan its tooltip.
-execFileSync(
-  process.execPath,
-  ['scripts/build-tooltips.mjs', join(OUT_DIR, 'tooltips.json'), srcSvg],
-  { stdio: 'inherit' }
-);
-
-console.log(`built ${OUT_DIR}/ -> ${asset}`);
 console.log(`built ${OUT_DIR}/ -> ${svgAsset}, ${tooltipsAsset}`);
