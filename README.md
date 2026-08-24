@@ -4,7 +4,7 @@
 single keymap:
 
 - [Corne](https://github.com/foostan/crkbd) from Typeractive (`nice_nano_v2`)
-- [Toucan2](https://docs.beekeeb.com/toucan2-keyboard) from beekeeb (`seeeduino_xiao_ble`,  Azoteq trackpad)
+- [Toucan2](https://docs.beekeeb.com/toucan2-keyboard) from beekeeb (`seeeduino_xiao_ble`, Azoteq trackpad)
 
 This configuration uses the [Graphite](https://github.com/rdavison/graphite-layout) layout with [home row mods](https://precondition.github.io/home-row-mods).
 
@@ -47,7 +47,8 @@ The firmware and diagrams are built via GitHub Actions workflow. Each release at
 | `corne_left.uf2` / `corne_right.uf2` | Corne halves |
 | `toucan2_left.uf2` / `toucan2_right.uf2` | Toucan2 halves |
 
-Alongside the zip it attaches `keymap-<version>.svg` and `keymap-<version>.png` (2x light render).
+Alongside the zip it attaches the keymap diagram as it stood at that version, as
+`keymap-<version>.svg` and `keymap-<version>.png` (2x light render).
 
 The version shown on each keyboard's display while on the base layer is stamped into
 [`config/shared/version.dtsi`](./config/shared/version.dtsi) by the release workflow.
@@ -74,7 +75,7 @@ You can generate and preview the keymap SVG diagram locally using [Keymap Drawer
   ./scripts/watch-draw.zsh
   ```
 
-This generates `keymap-drawer/corne.local.svg` (gitignored) for instant local preview.
+This generates `keymap-drawer/corne.local.svg` (gitignored), allowing you to review visual changes locally before committing.
 
 ## Interactive Keymap Viewer
 

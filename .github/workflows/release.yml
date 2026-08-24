@@ -51,13 +51,111 @@ jobs:
           mv firmware-artifact/firmware.zip firmware-artifact/firmware-${{ steps.extract_version.outputs.version }}.zip
           echo "Renamed artifact to firmware-${{ steps.extract_version.outputs.version }}.zip"
 
+      - name: Collect keymap diagram
+        env:
+          VERSION: ${{ steps.extract_version.outputs.version }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          mkdir -p keymap-artifact
+          SVG="keymap-artifact/keymap-$VERSION.svg"
+
+          # Fetched again rather than relying on the checkout: the version stamp
+          # push triggers a redraw of this branch, and that commit can land after
+          # the checkout that started this job.
+          git fetch --quiet origin "$BRANCH"
+
+          # Taken from the release branch rather than the checked-out main, so the
+          # diagram matches the commit that gets tagged: a redraw landing on main
+          # while a release is in flight must not document a version it is not
+          # part of. One diagram covers both keyboards -- see the comment in
+          # draw-keymaps.yml -- so the asset is named "keymap-", not "corne-".
+          git show "origin/$BRANCH:keymap-drawer/corne.svg" > "$SVG"
+
+          # The base layer's label is the stamped version (see the comment in
+          # config/keymap-drawer.config.yml), which is what makes a downloaded
+          # diagram self-identifying -- so a diagram drawn before the stamp would
+          # attach a plausible-looking asset labelled with the previous release.
+          # prepare-release.yml strips the leading "v" for the display string.
+          if ! grep -qF ">${VERSION#v}</text>" "$SVG"; then
+            echo "$SVG is not labelled ${VERSION#v} -- the drawer workflow has" >&2
+            echo "not redrawn $BRANCH yet. Re-run this job once it has." >&2
+            exit 1
+          fi
+
+      - name: Render keymap diagram to PNG
+        env:
+          VERSION: ${{ steps.extract_version.outputs.version }}
+        run: |
+          SVG="$PWD/keymap-artifact/keymap-$VERSION.svg"
+          PNG="$PWD/keymap-artifact/keymap-$VERSION.png"
+
+          # Checked here rather than after the fact: a navigation failure does not
+          # fail Chrome, it screenshots the "file couldn't be accessed" page, and
+          # that PNG is the right size and a plausible weight. Absolute paths for
+          # the same reason -- a relative --screenshot target is resolved against
+          # Chrome's own working directory, not this step's.
+          if [ ! -s "$SVG" ]; then
+            echo "no keymap diagram at $SVG" >&2
+            exit 1
+          fi
+
+          # Read the size off the diagram rather than hard-coding it, so a layer
+          # added later grows the PNG instead of being cropped out of it.
+          DIMS=$(sed -n '1s/.*width="\([0-9]\{1,\}\)".*height="\([0-9]\{1,\}\)".*/\1 \2/p' "$SVG")
+          if [ -z "$DIMS" ]; then
+            echo "could not read width/height from $SVG" >&2
+            exit 1
+          fi
+
+          # keymap-drawer has no PNG output of its own and its README points at
+          # CairoSVG or Inkscape, but the SVG-native renderers do not implement
+          # the CSS this diagram leans on. keymap-drawer.config.yml styles it with
+          # custom properties and the `translate:` property; librsvg resolves
+          # var() only for paint colours and only with a fallback, and resvg
+          # covers the static SVG subset. Rendered through resvg the accent keys
+          # come out black and the home row modifier glyphs land on top of the
+          # letters -- silently, exit code 0. Chrome is the engine the published
+          # site renders with, and its .deb depends on fonts-liberation, so the
+          # monospace legends resolve the same way here as they do locally.
+          #
+          # --default-background-color is what makes this the light themed PNG.
+          # The SVG carries no background of its own (it inherits the page's), so
+          # without this it renders transparent and its near-black legends are
+          # unreadable on any dark backdrop.
+          CHROME=$(command -v google-chrome || command -v chromium-browser || command -v chromium || true)
+          if [ -z "$CHROME" ]; then
+            echo "no Chrome on the runner to render $SVG with" >&2
+            exit 1
+          fi
+
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --hide-scrollbars \
+            --user-data-dir="$(mktemp -d)" \
+            --default-background-color=FFFFFFFF \
+            --force-device-scale-factor=2 \
+            --window-size="${DIMS// /,}" \
+            --screenshot="$PNG" \
+            "file://$SVG"
+
+          if [ ! -s "$PNG" ]; then
+            echo "rendering $SVG produced no PNG" >&2
+            exit 1
+          fi
+          echo "rendered $PNG at 2x of ${DIMS// /x}"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.extract_version.outputs.version }}
           target_commitish: ${{ github.event.workflow_run.head_branch }}
           name: ${{ steps.extract_version.outputs.version }}
-          files: firmware-artifact/firmware-${{ steps.extract_version.outputs.version }}.zip
+          files: |
+            firmware-artifact/firmware-${{ steps.extract_version.outputs.version }}.zip
+            keymap-artifact/keymap-${{ steps.extract_version.outputs.version }}.svg
+            keymap-artifact/keymap-${{ steps.extract_version.outputs.version }}.png
           generate_release_notes: true
 
       - name: Merge release branch to main

@@ -21,6 +21,7 @@
 export default {
   'home-row-mods': {
     match: '&hml',
+    group: true,
     title: 'Home row mod',
     body:
       'Tap for the letter, hold for the modifier. The "balanced" flavour only ' +
@@ -31,6 +32,7 @@ export default {
       'tapping-term-ms:       200\n' +
       'quick-tap-ms:          175\n' +
       'require-prior-idle-ms: 150',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/hold-tap',
     links: [
       {
         text: 'Home row mods, explained',
@@ -41,11 +43,13 @@ export default {
 
   'home-row-mods-right': {
     match: '&hmr',
+    group: true,
     title: 'Home row mod',
     body:
       'Mirror of the left hand. Positional hold-tap means a hold only resolves ' +
       'if the other key is on the opposite half, so same-hand letter rolls ' +
       'never trigger a stray modifier.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/hold-tap',
     links: [
       {
         text: 'Home row mods, explained',
@@ -58,31 +62,41 @@ export default {
     match: '&ltt',
     title: 'Layer-tap thumb',
     body:
-      'Tap for backspace, hold for the Num layer. Tap and then press again ' +
-      'quickly to hold backspace down and delete continuously -- a plain hold ' +
-      'gives you the layer instead.',
+      'Tap for backspace, hold for the `Num` layer. Hold together with the `Nav` thumb for `Media` (tri-layer). ' +
+      'Quick tap-then-hold repeats backspace.',
     pre: 'flavor:        hold-preferred\nquick-tap-ms:  175',
-    links: [
-      {
-        text: 'ZMK hold-tap behaviour',
-        href: 'https://zmk.dev/docs/keymaps/behaviors/hold-tap',
-      },
-    ],
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/layers#layer-tap',
   },
 
   'thumb-layer-tap-norepeat': {
     match: '&ltt_norepeat',
     title: 'Layer-tap thumb',
     body:
-      'Tap for escape, hold for the Nav layer. Unlike the backspace thumb this ' +
-      'one has no quick-tap window: escape has no use for auto-repeat, and the ' +
-      'window would otherwise turn "escape, then hold for Nav" into a second escape.',
+      'Tap for escape, hold for the `Nav` layer. Hold together with the `Num` thumb for `Media` (tri-layer). ' +
+      'No repeat window so a quick tap-then-hold enters `Nav` immediately.',
     pre: 'flavor:        hold-preferred\nquick-tap-ms:  (disabled)',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/layers#layer-tap',
   },
 
-  // NOTE: combos are not addressable in this pass -- they live in combos.dtsi,
-  // not in a layer's bindings, so a "&capitalize_i" entry here would match
-  // nothing and fail the build. Combo support is additive later via combopos-N.
+  // --- Combos --------------------------------------------------------------
+
+  'caps-lock': {
+    combo: true,
+    match: '&kp CAPSLOCK',
+    title: 'Caps Lock',
+    keys: ['Z', '\''],
+    body: 'Toggles standard Caps Lock.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/key-press',
+  },
+
+  'caps-word': {
+    combo: true,
+    match: '&caps_word',
+    title: 'Caps Word',
+    keys: ['V', 'K'],
+    body: 'Capitalizes words until space, punctuation, or backspace is pressed.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/caps-word',
+  },
 
   'clipboard-copy': {
     match: '&kp LC(C)',
@@ -118,7 +132,7 @@ export default {
     keys: ['Ctrl', 'Y'],
     body:
       'The Windows binding. Most other platforms and many editors use ' +
-      'Ctrl+Shift+Z instead, so this one is the least portable key on the layer.',
+      '`Ctrl+Shift+Z` instead, so this one is the least portable key on the layer.',
   },
 
   // --- Nav, left hand: OS navigation ---------------------------------------
@@ -175,7 +189,7 @@ export default {
     title: 'Context menu',
     body:
       'The dedicated menu key, equivalent to a right-click on whatever currently ' +
-      'has focus. Distinct from Shift+F10 in a few applications.',
+      'has focus. Distinct from `Shift+F10` in a few applications.',
   },
 
   // --- Nav, right hand -----------------------------------------------------
@@ -186,19 +200,19 @@ export default {
     body:
       'Toggles overtype mode, where typing replaces the character under the ' +
       'cursor instead of pushing it along. Also the paste half of the older ' +
-      'Shift+Insert / Ctrl+Insert clipboard bindings.',
+      '`Shift+Insert` / `Ctrl+Insert` clipboard bindings.',
   },
 
   'line-home': {
     match: '&kp HOME',
     title: 'Start of line',
-    body: 'Add Ctrl (left home row) for the start of the document.',
+    body: 'Add `Ctrl` (left home row) for the start of the document.',
   },
 
   'line-end': {
     match: '&kp END',
     title: 'End of line',
-    body: 'Add Ctrl (left home row) for the end of the document.',
+    body: 'Add `Ctrl` (left home row) for the end of the document.',
   },
 
   'page-up': {
@@ -234,17 +248,13 @@ export default {
   // Prefix match: one entry covers all five profile keys.
   'bluetooth-profile': {
     match: '&bt BT_SEL',
+    group: true,
     title: 'Bluetooth profile',
     body:
       'Switches the keyboard to one of its five paired hosts. Only the central ' +
       'half talks to the computer; the peripheral keeps its own separate link ' +
       'to the central.',
-    links: [
-      {
-        text: 'ZMK bluetooth behaviour',
-        href: 'https://zmk.dev/docs/keymaps/behaviors/bluetooth',
-      },
-    ],
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/bluetooth',
   },
 
   'bluetooth-clear': {
@@ -254,6 +264,7 @@ export default {
       'Forgets the pairing on the currently selected profile only. Use it when a ' +
       'host will not reconnect: clear here, remove the keyboard on that host, ' +
       'then pair again.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/bluetooth',
   },
 
   'output-toggle': {
@@ -263,6 +274,7 @@ export default {
       'Switches between USB and Bluetooth. Worth knowing when the keyboard is ' +
       'plugged in but typing into the wrong machine -- USB does not automatically ' +
       'win over an active Bluetooth connection.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/outputs',
   },
 
   'lock-screen': {
@@ -270,8 +282,48 @@ export default {
     title: 'Lock screen',
     keys: ['Win', 'L'],
     body:
-      'Sent as a dedicated HID consumer usage rather than the Win+L chord, so it ' +
+      'Sent as a dedicated HID consumer usage rather than the `Win+L` chord, so it ' +
       'does not depend on the modifier reaching the host first.',
+  },
+
+  'media-prev': {
+    match: '&kp C_PREV',
+    title: 'Previous track',
+  },
+
+  'media-next': {
+    match: '&kp C_NEXT',
+    title: 'Next track',
+  },
+
+  'media-vol-down': {
+    match: '&kp C_VOL_DN',
+    title: 'Volume down',
+  },
+
+  'media-vol-up': {
+    match: '&kp C_VOL_UP',
+    title: 'Volume up',
+  },
+
+  'media-mute': {
+    match: '&kp C_MUTE',
+    title: 'Mute audio',
+  },
+
+  'media-play-pause': {
+    match: '&kp C_PLAY_PAUSE',
+    title: 'Play / Pause',
+  },
+
+  'brightness-down': {
+    match: '&kp C_BRI_DN',
+    title: 'Brightness down',
+  },
+
+  'brightness-up': {
+    match: '&kp C_BRI_UP',
+    title: 'Brightness up',
   },
 
   'sys-reset': {
@@ -280,8 +332,9 @@ export default {
     keys: ['hold 1s'],
     body:
       'Reboots the half this key is on. Harmless -- it does not erase settings or ' +
-      'firmware. Nav carries the left half, Num the right, because the behaviour ' +
+      'firmware. `Nav` carries the left half, `Num` the right, because the behaviour ' +
       'always acts on the half whose key you pressed.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/reset',
   },
 
   'bootloader': {
@@ -289,26 +342,9 @@ export default {
     title: 'Bootloader',
     keys: ['hold 1s'],
     body:
-      'Reboots the half this key is on into the UF2 bootloader, so it mounts as a ' +
-      'USB drive for flashing -- no double-tapping the reset button. ZMK runs this ' +
-      'on the half whose key was pressed, so Nav flashes the left half and Num the ' +
-      'right.',
-    pre:
-      'Why not on Media? That layer needs a thumb on BOTH halves.\n' +
-      'A half in the bootloader stops scanning and drops its BLE\n' +
-      'link, so Media would become unreachable the moment you\n' +
-      'flashed one -- stranding the other. Nav and Num each need\n' +
-      'only one thumb, so either half stays reachable alone.\n' +
-      '\n' +
-      'A press shorter than a second does nothing: the wrapper is\n' +
-      'flavor = "tap-preferred", so it resolves to the hold only\n' +
-      'once the full second elapses, and to &none otherwise.',
-    links: [
-      {
-        text: 'ZMK reset behaviours',
-        href: 'https://zmk.dev/docs/keymaps/behaviors/reset',
-      },
-    ],
+      'Reboots the half this key is on into the UF2 bootloader for flashing firmware. ' +
+      'Must be held for 1 second to prevent accidental triggers.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/reset#bootloader',
   },
 
   // --- Mouse ---------------------------------------------------------------
@@ -317,10 +353,12 @@ export default {
   // glyphs already say which button each one is.
   'trackpad-click': {
     match: '&mkp',
+    group: true,
     title: 'Trackpad button',
     body:
       'Only reachable on the Toucan2. Its trackpad activates this layer while a ' +
       'finger rests on the pad, turning the thumbs into mouse buttons for as ' +
       'long as you are touching it. On the Corne the layer is unreachable.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/mouse-emulation',
   },
 };

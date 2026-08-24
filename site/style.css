@@ -1,14 +1,67 @@
+/* Light is the base, dark is an override, and the override is applied both
+   by the media query and by the attribute. Three states fall out of that:
+     [data-theme="light"]  -- the :not() excludes it from the media block
+     [data-theme="dark"]   -- the attribute rule comes last and wins
+     no attribute ("system") -- the media query decides
+   Never give a colour its only definition inside the media block, or the
+   explicit-light case loses it. */
 :root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --fg: #24292f;
+  --muted: #57606a;
+  --link: #0969da;
+  --rule: #d0d7de;
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --border: #d0d7de;
+  --strong: #1f2328;
+  --code-bg: #f6f8fa;
+  --shadow: rgb(31 35 40 / 18%);
+  /* 840px (the SVG's natural width) + the 2x20px padding applied at the
+     desktop breakpoint, so the diagram lands at exactly 1:1 on wide screens
+     rather than being squeezed by the padding. */
+  --max: 880px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d1117;
+    --fg: #c9d1d9;
+    --muted: #8b949e;
+    --link: #58a6ff;
+    --rule: #21262d;
+    --surface: #161b22;
+    --surface-2: #21262d;
+    --border: #30363d;
+    --strong: #ffffff;
+    --code-bg: #0d1117;
+    --shadow: rgb(0 0 0 / 55%);
+  }
+}
+
+:root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #0d1117;
   --fg: #c9d1d9;
   --muted: #8b949e;
   --link: #58a6ff;
   --rule: #21262d;
-  /* 840px (the SVG's natural width) + the 2x20px padding applied at the
-     desktop breakpoint, so the diagram lands at exactly 1:1 on wide screens
-     rather than being squeezed by the padding. */
-  --max: 880px;
+  --surface: #161b22;
+  --surface-2: #21262d;
+  --border: #30363d;
+  --strong: #ffffff;
+  --code-bg: #0d1117;
+  --shadow: rgb(0 0 0 / 55%);
+}
+
+/* Inline icons. The diagram's own stylesheet becomes document-scoped once
+   the enhancement swaps it into the DOM, and it carries `svg path { fill:
+   inherit }` -- which beats a fill="currentColor" presentation attribute and
+   leaves every icon on the page black. Setting it from CSS wins that back. */
+.icon path {
+  fill: currentColor;
 }
 
 * {
@@ -28,7 +81,11 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Shares main's column so the heading lines up with the diagram's left edge.
+   Wraps rather than squeezing: at 320px the two children still fit, but a
+   longer heading or a translated label must not push the control off. */
 header {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
@@ -37,6 +94,8 @@ header {
   width: 100%;
   max-width: var(--max);
   margin: 0 auto;
+  /* Top only: matches main's side padding and leaves the gap between the
+     heading and the diagram to main. */
   padding: 16px 10px 0;
 }
 
@@ -58,8 +117,8 @@ h1 {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-weight: 500;
   color: var(--muted);
-  background: #21262d;
-  border: 1px solid #30363d;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 999px;
   text-decoration: none;
   transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
@@ -69,7 +128,71 @@ h1 {
 .kb-version-badge:focus-visible {
   color: var(--link);
   border-color: var(--link);
-  background: #161b22;
+  background: var(--surface);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hidden by default in HTML so that without JS (or before it runs) there is
+   no dead button. main.js flips hidden=false once wired. */
+.theme,
+.tip-mode {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.theme[hidden],
+.tip-mode[hidden] {
+  display: none;
+}
+
+/* Tooltip mode is desktop only: on touch screens hover does not exist, so the
+   control would offer a choice between "click" and "broken". */
+@media (pointer: coarse) {
+  .tip-mode {
+    display: none !important;
+  }
+}
+
+.theme button,
+.tip-mode button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.theme button:hover,
+.tip-mode button:hover {
+  color: var(--fg);
+}
+
+.theme button:focus-visible,
+.tip-mode button:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 1px;
+}
+
+.theme button[aria-pressed="true"],
+.tip-mode button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 1px 2px var(--shadow);
 }
 
 main {
@@ -77,13 +200,16 @@ main {
   width: 100%;
   max-width: var(--max);
   margin: 0 auto;
-  padding: 12px 10px 0;
+  /* Half the desktop padding: enough to keep the diagram off the screen
+     edges without wasting width on a phone. */
+  padding: 8px 10px 0;
 }
 
-a:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--link);
-  outline-offset: 2px;
+/* Focus outline for individual interactive keys in SVG */
+g.key:focus-visible rect,
+g.combo:focus-visible rect {
+  stroke: var(--link) !important;
+  stroke-width: 2px !important;
 }
 
 /* The SVG is 840x1433, so width:100% keeps it readable on a phone and the
@@ -97,19 +223,14 @@ button:focus-visible {
   user-select: none;
 }
 
-/* Accessible focus outlines on individual SVG keys */
-g.key:focus-visible rect,
-g.combo:focus-visible rect {
-  stroke: var(--link) !important;
-  stroke-width: 2px !important;
-}
-
 /* --- documented keys ------------------------------------------------- */
 
 .kb-doc {
   cursor: pointer;
 }
 
+/* Corner dot marking a key that has an explanation. Without a marker,
+   discoverability is nil -- nobody clicks keys speculatively. */
 .kb-dot {
   fill: var(--link);
   pointer-events: none;
@@ -120,17 +241,45 @@ g.combo:focus-visible rect {
   r: 4.5;
 }
 
+/* --- combo highlights ------------------------------------------------- */
+
+.kb-combo-doc {
+  cursor: pointer;
+}
+
+.kb-combo-doc rect.combo {
+  stroke: var(--link);
+  stroke-width: 1.5;
+}
+
+.kb-combo-doc.kb-open rect.combo {
+  stroke-width: 2;
+}
+
+.kb-source rect.key {
+  stroke: var(--link) !important;
+  stroke-width: 2 !important;
+  fill: var(--surface-2) !important;
+}
+
+/* Group highlighting for related keys (e.g. Home Row Mods) */
+.kb-group-peer rect.key {
+  stroke: var(--link) !important;
+  stroke-width: 1.5 !important;
+  stroke-dasharray: 4 3 !important;
+}
+
 /* --- tooltip ---------------------------------------------------------- */
 
 .kb-tip {
   position: absolute;
   z-index: 10;
   max-width: min(320px, calc(100vw - 24px));
-  background: #161b22;
-  border: 1px solid #30363d;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 14px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 55%);
+  box-shadow: 0 8px 24px var(--shadow);
   font-size: 13.5px;
   line-height: 1.5;
 }
@@ -142,7 +291,7 @@ g.combo:focus-visible rect {
 .kb-tip h2 {
   margin: 0 0 6px;
   font-size: 14px;
-  color: #fff;
+  color: var(--strong);
 }
 
 .kb-tip p {
@@ -158,7 +307,7 @@ g.combo:focus-visible rect {
   margin: 0 0 8px;
   padding: 8px 10px;
   overflow-x: auto;
-  background: #0d1117;
+  background: var(--code-bg);
   border: 1px solid var(--rule);
   border-radius: 6px;
   font-size: 12px;
@@ -174,14 +323,14 @@ g.combo:focus-visible rect {
 }
 
 .kb-keys kbd {
-  background: #21262d;
-  border: 1px solid #30363d;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-bottom-width: 2px;
   border-radius: 4px;
   padding: 1px 6px;
   font: inherit;
   font-size: 12px;
-  color: #fff;
+  color: var(--strong);
 }
 
 .kb-tip ul {
@@ -205,10 +354,10 @@ g.combo:focus-visible rect {
   align-items: center;
   gap: 2px;
   padding: 4px 6px;
-  background: #161b22;
-  border: 1px solid #30363d;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 999px;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 55%);
+  box-shadow: 0 4px 16px var(--shadow);
 }
 
 .kb-dl-icon {
@@ -235,8 +384,8 @@ g.combo:focus-visible rect {
 .kb-dl button:hover,
 .kb-dl a:focus-visible,
 .kb-dl button:focus-visible {
-  background: #21262d;
-  color: #fff;
+  background: var(--surface-2);
+  color: var(--strong);
 }
 
 .kb-dl button:disabled {
@@ -278,7 +427,6 @@ footer a:focus-visible {
 }
 
 @media (pointer: coarse) {
-
   .kb-dl a,
   .kb-dl button {
     padding: 8px 12px;

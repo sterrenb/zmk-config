@@ -1,19 +1,22 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 import { copyFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
   root: 'site',
-  publicDir: false,
+  build: {
+    outDir: resolve(__dirname, 'dist'),
+    emptyOutDir: true,
+    target: 'es2022'
+  },
   server: {
     port: 8080,
     fs: {
       allow: [resolve(__dirname, '.')]
     }
-  },
-  build: {
-    outDir: resolve(__dirname, 'dist'),
-    emptyOutDir: true
   },
   plugins: [
     {
@@ -28,4 +31,3 @@ export default defineConfig({
     }
   ]
 });
-

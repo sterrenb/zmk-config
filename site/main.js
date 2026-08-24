@@ -1,27 +1,72 @@
-import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
 import tooltipsData from './tooltips.json';
+import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
 
-const NS = 'http://www.w3.org/2000/svg';
-const SCALE = 2;
+/* ==========================================================================
+   Theme Controller
+   ========================================================================== */
+(function initTheme() {
+  const themeGroup = document.querySelector('.theme');
+  if (!themeGroup) return;
 
-(function init() {
-  const container = document.getElementById('keymap-container');
-  if (!container) return;
+  const buttons = [...themeGroup.querySelectorAll('[data-theme-choice]')];
 
-  const parsed = new DOMParser().parseFromString(keymapSvgRaw, 'image/svg+xml');
+  const currentTheme = () => document.documentElement.dataset.theme || 'system';
+
+  const syncButtons = () => {
+    const active = currentTheme();
+    for (const btn of buttons) {
+      btn.setAttribute('aria-pressed', String(btn.dataset.themeChoice === active));
+    }
+  };
+
+  for (const btn of buttons) {
+    btn.addEventListener('click', () => {
+      const choice = btn.dataset.themeChoice;
+      if (choice === 'light' || choice === 'dark') {
+        document.documentElement.dataset.theme = choice;
+        try {
+          localStorage.setItem('theme', choice);
+        } catch (e) { }
+      } else if (choice === 'system') {
+        delete document.documentElement.dataset.theme;
+        try {
+          localStorage.removeItem('theme');
+        } catch (e) { }
+      }
+      syncButtons();
+    });
+  }
+
+  syncButtons();
+  themeGroup.hidden = false;
+})();
+
+/* ==========================================================================
+   Progressive Interactive Keymap & Tooltips
+   ========================================================================== */
+(async function initKeymap() {
+  const img = document.querySelector('.keymap');
+  if (!img) return;
+
+  const data = tooltipsData;
+  if (!data) return;
+
+  const markup = keymapSvgRaw;
+  const parsed = new DOMParser().parseFromString(markup, 'image/svg+xml');
   const svg = parsed.documentElement;
   if (!svg || svg.nodeName !== 'svg') return;
 
-  // Let CSS drive the responsive sizing; viewBox preserves aspect ratio
+  // Let CSS drive the size; the viewBox preserves the aspect ratio.
   svg.removeAttribute('width');
   svg.removeAttribute('height');
   svg.setAttribute('class', 'keymap');
-  container.replaceChildren(svg);
+  img.replaceWith(svg);
 
+  const NS = 'http://www.w3.org/2000/svg';
   const layers = svg.querySelectorAll(':scope > g[class^="layer-"]');
   const targets = new Map();
 
-  // Extract stamped version from base layer (e.g. "1.3.0")
+  // Extract stamped version from base layer (e.g. "1.3.1")
   const baseLayer = layers[0];
   const match = baseLayer?.getAttribute('class')?.match(/layer-([0-9]+\.[0-9]+\.[0-9]+)/);
   const version = match ? match[1] : null;
@@ -34,36 +79,63 @@ const SCALE = 2;
     badge.title = `View Release v${version} on GitHub`;
   }
 
-  // Bind tooltips and add accessible attributes
-  for (const [slot, id] of Object.entries(tooltipsData.keys)) {
+  // Key tooltips
+  for (const [slot, id] of Object.entries(data.keys || {})) {
     const [layerIndex, keyIndex] = slot.split('.');
     const key = layers[layerIndex]?.querySelector(`.keypos-${keyIndex}`);
-    if (!key || !tooltipsData.content[id]) continue;
+    if (!key || !data.content[id]) continue;
 
     key.classList.add('kb-doc');
     key.setAttribute('tabindex', '0');
     key.setAttribute('role', 'button');
     key.setAttribute('aria-haspopup', 'dialog');
-    if (tooltipsData.content[id].title) {
-      key.setAttribute('aria-label', tooltipsData.content[id].title);
+    if (data.content[id].title) {
+      key.setAttribute('aria-label', data.content[id].title);
     }
 
-    // Indicator dot (bottom-right of 53x53 key)
+    // Bottom-right of the 53x53 key, which spans -26..27 on both axes.
     const dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('cx', '19');
     dot.setAttribute('cy', '19');
     dot.setAttribute('r', '3');
     dot.setAttribute('class', 'kb-dot');
     key.appendChild(dot);
-    targets.set(key, id);
+    targets.set(key, { id, isCombo: false });
   }
 
-  /* ---- tooltip component ------------------------------------------- */
+  // Combo tooltips
+  const basePositions = {};
+  if (layers[0]) {
+    for (const key of layers[0].querySelectorAll('[class*="keypos-"]')) {
+      const m = key.className.baseVal.match(/keypos-(\d+)/);
+      if (m) basePositions[m[1]] = key;
+    }
+  }
+
+  for (const [comboIndex, { id, positions }] of Object.entries(data.combos || {})) {
+    const combo = svg.querySelector(`.combopos-${comboIndex}`);
+    if (!combo || !data.content[id]) continue;
+
+    combo.classList.add('kb-combo-doc');
+    combo.setAttribute('tabindex', '0');
+    combo.setAttribute('role', 'button');
+    combo.setAttribute('aria-haspopup', 'dialog');
+    if (data.content[id].title) {
+      combo.setAttribute('aria-label', data.content[id].title);
+    }
+
+    const sourceKeys = (positions || []).map((pos) => basePositions[pos]).filter(Boolean);
+    targets.set(combo, { id, isCombo: true, sourceKeys });
+  }
+
+  /* ---- tooltip & highlights ---------------------------------------- */
   const tip = document.createElement('div');
   tip.className = 'kb-tip';
   tip.hidden = true;
   document.body.appendChild(tip);
-  let openKey = null;
+  let openTarget = null;
+  let activeSources = [];
+  let activePeers = [];
 
   const el = (tag, text, parent) => {
     const node = document.createElement(tag);
@@ -96,8 +168,8 @@ const SCALE = 2;
     }
   }
 
-  function place(key) {
-    const box = key.getBoundingClientRect();
+  function place(target) {
+    const box = target.getBoundingClientRect();
     const self = tip.getBoundingClientRect();
     const pad = 8;
     let left = box.left + box.width / 2 - self.width / 2;
@@ -111,28 +183,94 @@ const SCALE = 2;
 
   function close() {
     tip.hidden = true;
-    openKey?.classList.remove('kb-open');
-    openKey = null;
+    openTarget?.classList.remove('kb-open');
+    openTarget = null;
+    clearHighlights();
   }
 
-  function open(key) {
-    render(tooltipsData.content[targets.get(key)]);
+  function clearHighlights() {
+    for (const key of activeSources) key.classList.remove('kb-source');
+    activeSources = [];
+    for (const key of activePeers) key.classList.remove('kb-group-peer');
+    activePeers = [];
+  }
+
+  function open(target) {
+    const meta = targets.get(target);
+    if (!meta) return;
+
+    render(data.content[meta.id]);
     tip.hidden = false;
-    place(key);
-    openKey = key;
-    key.classList.add('kb-open');
+    place(target);
+    openTarget = target;
+    target.classList.add('kb-open');
+
+    clearHighlights();
+
+    if (meta.isCombo && meta.sourceKeys) {
+      for (const key of meta.sourceKeys) key.classList.add('kb-source');
+      activeSources = meta.sourceKeys;
+    } else if (data.content[meta.id]?.group) {
+      const layerG = target.closest('g[class^="layer-"]');
+      if (layerG) {
+        for (const [k, m] of targets.entries()) {
+          if (m.id === meta.id && k !== target && layerG.contains(k)) {
+            k.classList.add('kb-group-peer');
+            activePeers.push(k);
+          }
+        }
+      }
+    }
   }
 
-  for (const key of targets.keys()) {
+  /* ---- interaction controller --------------------------------------- */
+  let tipMode = 'hover';
+  try {
+    const saved = localStorage.getItem('tip-mode');
+    if (saved === 'hover' || saved === 'click') tipMode = saved;
+  } catch (e) { }
+
+  const modeGroup = document.querySelector('.tip-mode');
+  if (modeGroup) {
+    const buttons = [...modeGroup.querySelectorAll('[data-tip-choice]')];
+    const sync = () => {
+      for (const btn of buttons) {
+        btn.setAttribute('aria-pressed', String(btn.dataset.tipChoice === tipMode));
+      }
+    };
+    for (const btn of buttons) {
+      btn.addEventListener('click', () => {
+        tipMode = btn.dataset.tipChoice;
+        try {
+          localStorage.setItem('tip-mode', tipMode);
+        } catch (e) { }
+        sync();
+        close();
+      });
+    }
+    sync();
+    modeGroup.hidden = false;
+  }
+
+  for (const target of targets.keys()) {
+    target.addEventListener('mouseenter', () => {
+      if (tipMode === 'hover') open(target);
+    });
+
+    target.addEventListener('mouseleave', () => {
+      if (tipMode === 'hover' && openTarget === target) close();
+    });
+
     const toggle = (event) => {
       event.stopPropagation();
-      const wasOpen = openKey === key;
+      const wasOpen = openTarget === target;
       close();
-      if (!wasOpen) open(key);
+      if (!wasOpen) open(target);
     };
 
-    key.addEventListener('click', toggle);
-    key.addEventListener('keydown', (event) => {
+    target.addEventListener('click', toggle);
+
+    target.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         toggle(event);
@@ -148,80 +286,105 @@ const SCALE = 2;
   });
 
   /* ---- download controls -------------------------------------------- */
-  const dlBox = document.querySelector('.kb-dl');
-  const svgLink = document.getElementById('kb-dl-svg');
-  const mainFrame = document.querySelector('main');
-
-  if (dlBox && svgLink && mainFrame) {
-    if (version) {
-      svgLink.download = `keymap-v${version}.svg`;
-    }
-
-    const svgBlob = new Blob([keymapSvgRaw], { type: 'image/svg+xml' });
-    const svgBlobUrl = URL.createObjectURL(svgBlob);
-    svgLink.href = svgBlobUrl;
-
-    // Add PNG button (2x client-side canvas rasterizer)
-    const pngBtn = document.createElement('button');
-    pngBtn.type = 'button';
-    pngBtn.textContent = 'PNG';
-    pngBtn.setAttribute('aria-label', 'Download keymap as PNG');
-    dlBox.appendChild(pngBtn);
-
-    pngBtn.addEventListener('click', async () => {
-      pngBtn.disabled = true;
-      pngBtn.textContent = '...';
-      try {
-        const imgEl = new Image();
-        await new Promise((resolve, reject) => {
-          imgEl.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = imgEl.naturalWidth * SCALE;
-            canvas.height = imgEl.naturalHeight * SCALE;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
-
-            canvas.toBlob((blob) => {
-              if (!blob) return reject(new Error('toBlob failed'));
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = version ? `keymap-v${version}.png` : 'keymap.png';
-              a.click();
-              setTimeout(() => URL.revokeObjectURL(url), 0);
-              resolve();
-            }, 'image/png');
-          };
-          imgEl.onerror = () => reject(new Error('PNG render failed'));
-          imgEl.src = svgBlobUrl;
-        });
-        pngBtn.textContent = 'PNG';
-      } catch {
-        pngBtn.textContent = 'failed';
-        setTimeout(() => (pngBtn.textContent = 'PNG'), 2000);
-      } finally {
-        pngBtn.disabled = false;
-      }
-    });
-
-    // Add direct Firmware download link
-    if (version) {
-      const fwLink = document.createElement('a');
-      fwLink.href = `https://github.com/sterrenb/zmk-config/releases/download/v${version}/firmware-v${version}.zip`;
-      fwLink.textContent = 'Firmware';
-      fwLink.title = `Download firmware-v${version}.zip (.uf2 files)`;
-      fwLink.setAttribute('aria-label', `Download firmware v${version}`);
-      dlBox.appendChild(fwLink);
-    }
-
-    if ('IntersectionObserver' in window) {
-      dlBox.classList.add('kb-dl-auto', 'kb-dl-on');
-      new IntersectionObserver(([entry]) => {
-        dlBox.classList.toggle('kb-dl-on', entry.isIntersecting);
-      }).observe(mainFrame);
-    }
-  }
+  initDownloads(version);
 })();
 
+/* ==========================================================================
+   Downloads Controller
+   ========================================================================== */
+function initDownloads(version) {
+  const box = document.querySelector('.kb-dl');
+  const svgLink = box?.querySelector('a[download]');
+  const frame = document.querySelector('main');
+  if (!box || !svgLink || !frame) return;
+
+  const SCALE = 2;
+
+  const markup = () => Promise.resolve(keymapSvgRaw);
+
+  function stem(svg) {
+    const match = svg.match(/<g[^>]*class="layer-([^"]*)"/);
+    return match && /^\d+\.\d+\.\d+$/.test(match[1]) ? `keymap-${match[1]}` : 'keymap';
+  }
+
+  function save(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  function rasterise(svg) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      const image = new Image();
+
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth * SCALE;
+        canvas.height = image.naturalHeight * SCALE;
+
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        URL.revokeObjectURL(url);
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))), 'image/png');
+      };
+
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('could not load diagram'));
+      };
+
+      image.src = url;
+    });
+  }
+
+  const png = document.createElement('button');
+  png.type = 'button';
+  png.textContent = 'PNG';
+  png.setAttribute('aria-label', 'Download the diagram as PNG');
+  box.appendChild(png);
+
+  png.addEventListener('click', async () => {
+    png.disabled = true;
+    png.textContent = '...';
+    try {
+      const svg = await markup();
+      save(await rasterise(svg), `${stem(svg)}.png`);
+      png.textContent = 'PNG';
+    } catch {
+      png.textContent = 'failed';
+      setTimeout(() => (png.textContent = 'PNG'), 2000);
+    } finally {
+      png.disabled = false;
+    }
+  });
+
+  // Add direct Firmware download link
+  if (version) {
+    const fwLink = document.createElement('a');
+    fwLink.href = `https://github.com/sterrenb/zmk-config/releases/download/v${version}/firmware-v${version}.zip`;
+    fwLink.textContent = 'Firmware';
+    fwLink.title = `Download firmware-v${version}.zip (.uf2 files)`;
+    fwLink.setAttribute('aria-label', `Download firmware v${version}`);
+    box.appendChild(fwLink);
+  }
+
+  if (!('IntersectionObserver' in window)) return;
+
+  box.classList.add('kb-dl-auto', 'kb-dl-on');
+
+  new IntersectionObserver(([entry]) => {
+    box.classList.toggle('kb-dl-on', entry.isIntersecting);
+    if (entry.isIntersecting) {
+      markup()
+        .then((svg) => (svgLink.download = `${stem(svg)}.svg`))
+        .catch(() => { });
+    }
+  }).observe(frame);
+}
