@@ -64,7 +64,6 @@ draw_config:
     rect.held {
       stroke: var(--color--red);
       stroke-width: 2;
-      stroke-dasharray: 4 3;
     }
 
     .keypos-0 rect.key,

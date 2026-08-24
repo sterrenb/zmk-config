@@ -191,6 +191,7 @@
 
     .kb-combo-doc:hover .kb-combo-dot,
     .kb-combo-doc.kb-open .kb-combo-dot {
+      r: 3.5;
       r: 1.8;
     }
 
@@ -208,6 +209,7 @@
 
     .kb-combo-source rect.key {
       stroke: var(--link) !important;
+      stroke-width: 2.5px !important;
       stroke-width: 2px !important;
       stroke-dasharray: 4 3;
     }
@@ -301,8 +303,6 @@
 
     .kb-tip a {
       color: var(--link);
-      pointer-events: auto;
-      cursor: pointer;
     }
 
     .kb-tip-doc {
@@ -318,9 +318,6 @@
       color: var(--muted);
       opacity: 0.6;
       text-decoration: none;
-      pointer-events: auto;
-      cursor: pointer;
-      z-index: 2;
       transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
     }
 
@@ -682,6 +679,7 @@
         dot.setAttribute('r', '3');
         dot.setAttribute('class', 'kb-dot');
         key.appendChild(dot);
+        targets.set(key, id);
         targets.set(key, { id, layerIndex: Number(layerIndex) });
       }
 
@@ -716,6 +714,9 @@
             const rw = parseFloat(rect.getAttribute('width'));
             const rh = parseFloat(rect.getAttribute('height')) || rw;
             const dot = document.createElementNS(NS, 'circle');
+            dot.setAttribute('cx', String(rx + rw - 3.5));
+            dot.setAttribute('cy', String(ry + 3.5));
+            dot.setAttribute('r', '2.2');
             dot.setAttribute('cx', String(rx + rw - 4));
             dot.setAttribute('cy', String(ry + rh - 4));
             dot.setAttribute('r', '1.5');
@@ -843,313 +844,317 @@
         clearHighlights();
       }
 
-      function open(element, contentId, sourcePositions = [], peerKeys = []) {
-        close();
-        render(data.content[contentId]);
-        tip.hidden = false;
-        place(element);
-        openTarget = element;
-        element.classList.add('kb-open');
+      function open(element, contentId, sourcePositions = []) {
+        function open(element, contentId, sourcePositions = [], peerKeys = []) {
+          close();
+          render(data.content[contentId]);
+          tip.hidden = false;
+          place(element);
+          openTarget = element;
+          element.classList.add('kb-open');
 
-        if (sourcePositions.length > 0) {
-          const baseLayer = layers[0];
-          if (baseLayer) {
-            for (const pos of sourcePositions) {
-              const keyEl = baseLayer.querySelector(`.keypos-${pos}`);
-              if (keyEl) {
-                keyEl.classList.add('kb-combo-source');
-                activeSources.push(keyEl);
+          if (sourcePositions.length > 0) {
+            const baseLayer = layers[0];
+            if (baseLayer) {
+              for (const pos of sourcePositions) {
+                const keyEl = baseLayer.querySelector(`.keypos-${pos}`);
+                if (keyEl) {
+                  keyEl.classList.add('kb-combo-source');
+                  activeSources.push(keyEl);
+                }
               }
+            }
+          }
+
+          if (peerKeys.length > 0) {
+            for (const peer of peerKeys) {
+              peer.classList.add('kb-combo-source');
+              activeSources.push(peer);
             }
           }
         }
 
-        if (peerKeys.length > 0) {
-          for (const peer of peerKeys) {
-            peer.classList.add('kb-combo-source');
-            activeSources.push(peer);
-          }
-        }
-      }
+        /*
+         * Tooltip trigger mode: 'hover' vs 'click'.
+         * On desktop (fine pointer + hover capability), defaults to 'hover' and
+         * persists the user's preference in localStorage.
+         * On touch / mobile devices, stays 'click' and the toggle is hidden via CSS.
+         */
+        const isDesktopHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        let tipMode = 'hover';
+        try {
+          const saved = localStorage.getItem('tip-mode');
+          if (saved === 'hover' || saved === 'click') tipMode = saved;
+        } catch (e) { }
 
-      /*
-       * Tooltip trigger mode: 'hover' vs 'click'.
-       * On desktop (fine pointer + hover capability), defaults to 'hover' and
-       * persists the user's preference in localStorage.
-       * On touch / mobile devices, stays 'click' and the toggle is hidden via CSS.
-       */
-      const isDesktopHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-      let tipMode = 'hover';
-      try {
-        const saved = localStorage.getItem('tip-mode');
-        if (saved === 'hover' || saved === 'click') tipMode = saved;
-      } catch (e) { }
+        const modeGroup = document.querySelector('.tip-mode');
+        if (modeGroup && isDesktopHover) {
+          const modeButtons = [...modeGroup.querySelectorAll('[data-tip-choice]')];
+          const syncMode = () => {
+            for (const btn of modeButtons) {
+              btn.setAttribute('aria-pressed', String(btn.dataset.tipChoice === tipMode));
+            }
+          };
 
-      const modeGroup = document.querySelector('.tip-mode');
-      if (modeGroup && isDesktopHover) {
-        const modeButtons = [...modeGroup.querySelectorAll('[data-tip-choice]')];
-        const syncMode = () => {
           for (const btn of modeButtons) {
-            btn.setAttribute('aria-pressed', String(btn.dataset.tipChoice === tipMode));
+            btn.addEventListener('click', () => {
+              const choice = btn.dataset.tipChoice;
+              if (choice !== 'hover' && choice !== 'click') return;
+              tipMode = choice;
+              try {
+                localStorage.setItem('tip-mode', choice);
+              } catch (e) { }
+              syncMode();
+              close();
+            });
           }
+
+          syncMode();
+          modeGroup.hidden = false;
+        }
+
+        let closeTimer = null;
+        const scheduleClose = (delay = 120) => {
+          clearTimeout(closeTimer);
+          closeTimer = setTimeout(close, delay);
         };
 
-        for (const btn of modeButtons) {
-          btn.addEventListener('click', () => {
-            const choice = btn.dataset.tipChoice;
-            if (choice !== 'hover' && choice !== 'click') return;
-            tipMode = choice;
-            try {
-              localStorage.setItem('tip-mode', choice);
-            } catch (e) { }
-            syncMode();
-            close();
+        const cancelClose = () => {
+          clearTimeout(closeTimer);
+        };
+
+        tip.addEventListener('pointerenter', () => {
+          if (isDesktopHover && tipMode === 'hover') cancelClose();
+        });
+        tip.addEventListener('pointerleave', (event) => {
+          if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
+            scheduleClose();
+          }
+        });
+
+        for (const [key, id] of targets.entries()) {
+          for (const [key, { id }] of targets.entries()) {
+            const peers = groupPeers.get(key) || [];
+            key.addEventListener('click', (event) => {
+              event.stopPropagation();
+              cancelClose();
+              const wasOpen = openTarget === key;
+              close();
+              if (!wasOpen) open(key, id);
+              if (!wasOpen) open(key, id, [], peers);
+            });
+
+            key.addEventListener('pointerenter', (event) => {
+              if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
+                cancelClose();
+                open(key, id);
+                open(key, id, [], peers);
+              }
+            });
+
+            key.addEventListener('pointerleave', (event) => {
+              if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
+                scheduleClose();
+              }
+            });
+          }
+
+          for (const [comboEl, { id, positions }] of comboTargets.entries()) {
+            comboEl.addEventListener('click', (event) => {
+              event.stopPropagation();
+              cancelClose();
+              const wasOpen = openTarget === comboEl;
+              close();
+              if (!wasOpen) open(comboEl, id, positions);
+            });
+
+            comboEl.addEventListener('pointerenter', (event) => {
+              if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
+                cancelClose();
+                open(comboEl, id, positions);
+              }
+            });
+
+            comboEl.addEventListener('pointerleave', (event) => {
+              if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
+                scheduleClose();
+              }
+            });
+          }
+
+          document.addEventListener('click', (event) => {
+            if (!tip.contains(event.target)) close();
           });
-        }
+          document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') close();
+          });
+        }) ();
 
-        syncMode();
-        modeGroup.hidden = false;
-      }
+        /*
+         * Theme control. Three states, of which "system" is the absence of an
+         * override: no attribute, nothing stored, so the media query decides and
+         * the page follows the OS as it changes -- including while open, which is
+         * why nothing here reads prefers-color-scheme. The head script has already
+         * applied any stored choice; this only wires up the buttons and keeps
+         * aria-pressed in step.
+         */
+        (function () {
+          const KEY = 'theme';
+          const group = document.querySelector('.theme');
+          if (!group) return;
 
-      let closeTimer = null;
-      const scheduleClose = (delay = 120) => {
-        clearTimeout(closeTimer);
-        closeTimer = setTimeout(close, delay);
-      };
+          const root = document.documentElement;
+          const buttons = [...group.querySelectorAll('[data-theme-choice]')];
 
-      const cancelClose = () => {
-        clearTimeout(closeTimer);
-      };
+          const sync = () => {
+            const current = root.dataset.theme || 'system';
+            for (const button of buttons) {
+              button.setAttribute('aria-pressed', String(button.dataset.themeChoice === current));
+            }
+          };
 
-      tip.addEventListener('pointerenter', () => {
-        if (isDesktopHover && tipMode === 'hover') cancelClose();
-      });
-      tip.addEventListener('pointerleave', (event) => {
-        if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
-          scheduleClose();
-        }
-      });
-
-      for (const [key, { id }] of targets.entries()) {
-        const peers = groupPeers.get(key) || [];
-        key.addEventListener('click', (event) => {
-          event.stopPropagation();
-          cancelClose();
-          const wasOpen = openTarget === key;
-          close();
-          if (!wasOpen) open(key, id, [], peers);
-        });
-
-        key.addEventListener('pointerenter', (event) => {
-          if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
-            cancelClose();
-            open(key, id, [], peers);
+          for (const button of buttons) {
+            button.addEventListener('click', () => {
+              const choice = button.dataset.themeChoice;
+              try {
+                if (choice === 'system') localStorage.removeItem(KEY);
+                else localStorage.setItem(KEY, choice);
+              } catch (e) {
+                // Private mode: the choice still applies, it just will not persist.
+              }
+              if (choice === 'system') delete root.dataset.theme;
+              else root.dataset.theme = choice;
+              sync();
+            });
           }
-        });
 
-        key.addEventListener('pointerleave', (event) => {
-          if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
-            scheduleClose();
-          }
-        });
-      }
-
-      for (const [comboEl, { id, positions }] of comboTargets.entries()) {
-        comboEl.addEventListener('click', (event) => {
-          event.stopPropagation();
-          cancelClose();
-          const wasOpen = openTarget === comboEl;
-          close();
-          if (!wasOpen) open(comboEl, id, positions);
-        });
-
-        comboEl.addEventListener('pointerenter', (event) => {
-          if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
-            cancelClose();
-            open(comboEl, id, positions);
-          }
-        });
-
-        comboEl.addEventListener('pointerleave', (event) => {
-          if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
-            scheduleClose();
-          }
-        });
-      }
-
-      document.addEventListener('click', (event) => {
-        if (!tip.contains(event.target)) close();
-      });
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') close();
-      });
-    })();
-
-    /*
-     * Theme control. Three states, of which "system" is the absence of an
-     * override: no attribute, nothing stored, so the media query decides and
-     * the page follows the OS as it changes -- including while open, which is
-     * why nothing here reads prefers-color-scheme. The head script has already
-     * applied any stored choice; this only wires up the buttons and keeps
-     * aria-pressed in step.
-     */
-    (function () {
-      const KEY = 'theme';
-      const group = document.querySelector('.theme');
-      if (!group) return;
-
-      const root = document.documentElement;
-      const buttons = [...group.querySelectorAll('[data-theme-choice]')];
-
-      const sync = () => {
-        const current = root.dataset.theme || 'system';
-        for (const button of buttons) {
-          button.setAttribute('aria-pressed', String(button.dataset.themeChoice === current));
-        }
-      };
-
-      for (const button of buttons) {
-        button.addEventListener('click', () => {
-          const choice = button.dataset.themeChoice;
-          try {
-            if (choice === 'system') localStorage.removeItem(KEY);
-            else localStorage.setItem(KEY, choice);
-          } catch (e) {
-            // Private mode: the choice still applies, it just will not persist.
-          }
-          if (choice === 'system') delete root.dataset.theme;
-          else root.dataset.theme = choice;
           sync();
-        });
-      }
+          // Only now is it more than decoration.
+          group.hidden = false;
+        })();
 
-      sync();
-      // Only now is it more than decoration.
-      group.hidden = false;
-    })();
+        /*
+         * Download control. Deliberately independent of the enhancement above: it
+         * fetches the diagram itself -- the same URL the <img> already loaded, so a
+         * cache hit -- rather than sharing state, so a missing tooltips.json cannot
+         * take the downloads with it.
+         *
+         * Both exports are the diagram as keymap-drawer drew it, never the live
+         * DOM: the tooltip dots are a site affordance and have no business in a
+         * file you save. That also keeps a downloaded SVG byte-identical to the one
+         * attached to the matching release.
+         *
+         * The PNG is rasterised here rather than at build time because a browser is
+         * the only renderer that gets this diagram right -- SVG-native converters
+         * drop the CSS custom properties and `translate:` that the drawer config
+         * leans on. See the comment in .github/workflows/release.yml.
+         */
+        (function () {
+          const box = document.querySelector('.kb-dl');
+          const svgLink = box?.querySelector('a[download]');
+          const frame = document.querySelector('main');
+          if (!box || !svgLink || !frame) return;
 
-    /*
-     * Download control. Deliberately independent of the enhancement above: it
-     * fetches the diagram itself -- the same URL the <img> already loaded, so a
-     * cache hit -- rather than sharing state, so a missing tooltips.json cannot
-     * take the downloads with it.
-     *
-     * Both exports are the diagram as keymap-drawer drew it, never the live
-     * DOM: the tooltip dots are a site affordance and have no business in a
-     * file you save. That also keeps a downloaded SVG byte-identical to the one
-     * attached to the matching release.
-     *
-     * The PNG is rasterised here rather than at build time because a browser is
-     * the only renderer that gets this diagram right -- SVG-native converters
-     * drop the CSS custom properties and `translate:` that the drawer config
-     * leans on. See the comment in .github/workflows/release.yml.
-     */
-    (function () {
-      const box = document.querySelector('.kb-dl');
-      const svgLink = box?.querySelector('a[download]');
-      const frame = document.querySelector('main');
-      if (!box || !svgLink || !frame) return;
+          // 1680x2866, matching the PNG attached to each release.
+          const SCALE = 2;
 
-      // 1680x2866, matching the PNG attached to each release.
-      const SCALE = 2;
+          let pending = null;
+          const markup = () =>
+            (pending ||= fetch(svgLink.href).then((res) => (res.ok ? res.text() : Promise.reject(new Error(res.status)))));
 
-      let pending = null;
-      const markup = () =>
-        (pending ||= fetch(svgLink.href).then((res) => (res.ok ? res.text() : Promise.reject(new Error(res.status)))));
+          /* The base layer's display-name is the stamped version, so a saved file
+             can identify itself the way the release assets do. Guarded, because
+             that layer is free to be named anything -- only a version is used. */
+          function stem(svg) {
+            const match = svg.match(/<g[^>]*class="layer-([^"]*)"/);
+            return match && /^\d+\.\d+\.\d+$/.test(match[1]) ? `keymap-${match[1]}` : 'keymap';
+          }
 
-      /* The base layer's display-name is the stamped version, so a saved file
-         can identify itself the way the release assets do. Guarded, because
-         that layer is free to be named anything -- only a version is used. */
-      function stem(svg) {
-        const match = svg.match(/<g[^>]*class="layer-([^"]*)"/);
-        return match && /^\d+\.\d+\.\d+$/.test(match[1]) ? `keymap-${match[1]}` : 'keymap';
-      }
+          function save(blob, name) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            a.click();
+            // Deferred: revoking in the same task cancels the download in Safari.
+            setTimeout(() => URL.revokeObjectURL(url), 0);
+          }
 
-      function save(blob, name) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = name;
-        a.click();
-        // Deferred: revoking in the same task cancels the download in Safari.
-        setTimeout(() => URL.revokeObjectURL(url), 0);
-      }
+          function rasterise(svg) {
+            return new Promise((resolve, reject) => {
+              const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+              const image = new Image();
 
-      function rasterise(svg) {
-        return new Promise((resolve, reject) => {
-          const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
-          const image = new Image();
+              image.onload = () => {
+                const canvas = document.createElement('canvas');
+                // The source keeps its width/height attributes, so the intrinsic
+                // size is the diagram's own 840x1433 rather than a guess.
+                canvas.width = image.naturalWidth * SCALE;
+                canvas.height = image.naturalHeight * SCALE;
 
-          image.onload = () => {
-            const canvas = document.createElement('canvas');
-            // The source keeps its width/height attributes, so the intrinsic
-            // size is the diagram's own 840x1433 rather than a guess.
-            canvas.width = image.naturalWidth * SCALE;
-            canvas.height = image.naturalHeight * SCALE;
+                const ctx = canvas.getContext('2d');
+                // The diagram carries no background and its legends are near-black,
+                // so a transparent PNG is unreadable on anything dark -- including
+                // this page. release.yml renders on white for the same reason.
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-            const ctx = canvas.getContext('2d');
-            // The diagram carries no background and its legends are near-black,
-            // so a transparent PNG is unreadable on anything dark -- including
-            // this page. release.yml renders on white for the same reason.
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                URL.revokeObjectURL(url);
+                canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))), 'image/png');
+              };
 
-            URL.revokeObjectURL(url);
-            canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))), 'image/png');
-          };
+              image.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error('could not load the diagram'));
+              };
 
-          image.onerror = () => {
-            URL.revokeObjectURL(url);
-            reject(new Error('could not load the diagram'));
-          };
+              image.src = url;
+            });
+          }
 
-          image.src = url;
-        });
-      }
-
-      const png = document.createElement('button');
-      png.type = 'button';
-      png.textContent = 'PNG';
-      png.setAttribute('aria-label', 'Download the diagram as PNG');
-      box.appendChild(png);
-
-      png.addEventListener('click', async () => {
-        png.disabled = true;
-        png.textContent = '...';
-        try {
-          const svg = await markup();
-          save(await rasterise(svg), `${stem(svg)}.png`);
+          const png = document.createElement('button');
+          png.type = 'button';
           png.textContent = 'PNG';
-        } catch {
-          // The SVG link still works, so say what failed and leave it at that.
-          png.textContent = 'failed';
-          setTimeout(() => (png.textContent = 'PNG'), 2000);
-        } finally {
-          png.disabled = false;
-        }
-      });
+          png.setAttribute('aria-label', 'Download the diagram as PNG');
+          box.appendChild(png);
 
-      /* <main> is observed rather than the diagram itself: the enhancement
-         above replaces the <img> with an inline <svg>, and an observer holding
-         the detached <img> would report it as gone forever. main contains only
-         the diagram, so it amounts to the same question. */
-      if (!('IntersectionObserver' in window)) return;
+          png.addEventListener('click', async () => {
+            png.disabled = true;
+            png.textContent = '...';
+            try {
+              const svg = await markup();
+              save(await rasterise(svg), `${stem(svg)}.png`);
+              png.textContent = 'PNG';
+            } catch {
+              // The SVG link still works, so say what failed and leave it at that.
+              png.textContent = 'failed';
+              setTimeout(() => (png.textContent = 'PNG'), 2000);
+            } finally {
+              png.disabled = false;
+            }
+          });
 
-      // Starts on, so the control does not blink for the usual case of landing
-      // at the top of the page with the diagram already in view.
-      box.classList.add('kb-dl-auto', 'kb-dl-on');
+          /* <main> is observed rather than the diagram itself: the enhancement
+             above replaces the <img> with an inline <svg>, and an observer holding
+             the detached <img> would report it as gone forever. main contains only
+             the diagram, so it amounts to the same question. */
+          if (!('IntersectionObserver' in window)) return;
 
-      new IntersectionObserver(([entry]) => {
-        box.classList.toggle('kb-dl-on', entry.isIntersecting);
-        // Warm the fetch and name the file once it is actually reachable.
-        if (entry.isIntersecting) {
-          markup()
-            .then((svg) => (svgLink.download = `${stem(svg)}.svg`))
-            .catch(() => { });
-        }
-      }).observe(frame);
-    })();
+          // Starts on, so the control does not blink for the usual case of landing
+          // at the top of the page with the diagram already in view.
+          box.classList.add('kb-dl-auto', 'kb-dl-on');
+
+          new IntersectionObserver(([entry]) => {
+            box.classList.toggle('kb-dl-on', entry.isIntersecting);
+            // Warm the fetch and name the file once it is actually reachable.
+            if (entry.isIntersecting) {
+              markup()
+                .then((svg) => (svgLink.download = `${stem(svg)}.svg`))
+                .catch(() => { });
+            }
+          }).observe(frame);
+        })();
   </script>
 </body>
 
