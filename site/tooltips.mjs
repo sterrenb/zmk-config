@@ -21,6 +21,7 @@
 export default {
   'home-row-mods': {
     match: '&hml',
+    group: true,
     title: 'Home row mod',
     body:
       'Tap for the letter, hold for the modifier. The "balanced" flavour only ' +
@@ -31,6 +32,7 @@ export default {
       'tapping-term-ms:       200\n' +
       'quick-tap-ms:          175\n' +
       'require-prior-idle-ms: 150',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/hold-tap',
     links: [
       {
         text: 'Home row mods, explained',
@@ -41,11 +43,13 @@ export default {
 
   'home-row-mods-right': {
     match: '&hmr',
+    group: true,
     title: 'Home row mod',
     body:
       'Mirror of the left hand. Positional hold-tap means a hold only resolves ' +
       'if the other key is on the opposite half, so same-hand letter rolls ' +
       'never trigger a stray modifier.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/hold-tap',
     links: [
       {
         text: 'Home row mods, explained',
@@ -244,6 +248,7 @@ export default {
   // Prefix match: one entry covers all five profile keys.
   'bluetooth-profile': {
     match: '&bt BT_SEL',
+    group: true,
     title: 'Bluetooth profile',
     body:
       'Switches the keyboard to one of its five paired hosts. Only the central ' +
@@ -348,10 +353,12 @@ export default {
   // glyphs already say which button each one is.
   'trackpad-click': {
     match: '&mkp',
+    group: true,
     title: 'Trackpad button',
     body:
       'Only reachable on the Toucan2. Its trackpad activates this layer while a ' +
       'finger rests on the pad, turning the thumbs into mouse buttons for as ' +
       'long as you are touching it. On the Corne the layer is unreachable.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/mouse-emulation',
   },
 };

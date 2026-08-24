@@ -210,7 +210,6 @@
       stroke: var(--link) !important;
       stroke-width: 2px !important;
       stroke-dasharray: 4 3;
-      fill: #dbeafe !important;
     }
 
     /* --- tooltip ---------------------------------------------------------- */
@@ -668,6 +667,7 @@
       const NS = 'http://www.w3.org/2000/svg';
       const layers = svg.querySelectorAll(':scope > g[class^="layer-"]');
       const targets = new Map();
+      const groupPeers = new Map();
 
       for (const [slot, id] of Object.entries(data.keys)) {
         const [layerIndex, keyIndex] = slot.split('.');
@@ -682,7 +682,21 @@
         dot.setAttribute('r', '3');
         dot.setAttribute('class', 'kb-dot');
         key.appendChild(dot);
-        targets.set(key, id);
+        targets.set(key, { id, layerIndex: Number(layerIndex) });
+      }
+
+      // Index group peers per layer
+      for (const [key, { id, layerIndex }] of targets.entries()) {
+        if (!data.content[id]?.group) continue;
+        const peers = [];
+        for (const [otherKey, otherTarget] of targets.entries()) {
+          if (otherTarget.layerIndex === layerIndex && otherTarget.id === id) {
+            peers.push(otherKey);
+          }
+        }
+        if (peers.length > 1) {
+          groupPeers.set(key, peers);
+        }
       }
 
       // Resolve combos
@@ -829,7 +843,7 @@
         clearHighlights();
       }
 
-      function open(element, contentId, sourcePositions = []) {
+      function open(element, contentId, sourcePositions = [], peerKeys = []) {
         close();
         render(data.content[contentId]);
         tip.hidden = false;
@@ -847,6 +861,13 @@
                 activeSources.push(keyEl);
               }
             }
+          }
+        }
+
+        if (peerKeys.length > 0) {
+          for (const peer of peerKeys) {
+            peer.classList.add('kb-combo-source');
+            activeSources.push(peer);
           }
         }
       }
@@ -909,19 +930,20 @@
         }
       });
 
-      for (const [key, id] of targets.entries()) {
+      for (const [key, { id }] of targets.entries()) {
+        const peers = groupPeers.get(key) || [];
         key.addEventListener('click', (event) => {
           event.stopPropagation();
           cancelClose();
           const wasOpen = openTarget === key;
           close();
-          if (!wasOpen) open(key, id);
+          if (!wasOpen) open(key, id, [], peers);
         });
 
         key.addEventListener('pointerenter', (event) => {
           if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
             cancelClose();
-            open(key, id);
+            open(key, id, [], peers);
           }
         });
 
