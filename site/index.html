@@ -6,21 +6,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Keymap &middot; tster.nl</title>
   <meta name="description" content="ZMK keymap diagram for a Corne and a Toucan2, sharing a single keymap.">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- Before first paint, so an explicit choice does not flash the other theme
+       on the way in. "system" is stored as the absence of the key, so clearing
+       it is what returns to following the OS. localStorage throws rather than
+       returning null in some privacy modes, hence the catch. -->
+  <script>
+    try {
+      var t = localStorage.getItem('theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) { }
+  </script>
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>%E2%8C%A8</text></svg>">
   <style>
+    /* Light is the base, dark is an override, and the override is applied both
+       by the media query and by the attribute. Three states fall out of that:
+         [data-theme="light"]  -- the :not() excludes it from the media block
+         [data-theme="dark"]   -- the attribute rule comes last and wins
+         no attribute ("system") -- the media query decides
+       Never give a colour its only definition inside the media block, or the
+       explicit-light case loses it. */
     :root {
+      color-scheme: light;
+      --bg: #ffffff;
+      --fg: #24292f;
+      --muted: #57606a;
+      --link: #0969da;
+      --rule: #d0d7de;
+      --surface: #ffffff;
+      --surface-2: #f6f8fa;
+      --border: #d0d7de;
+      --strong: #1f2328;
+      --code-bg: #f6f8fa;
+      --shadow: rgb(31 35 40 / 18%);
+      /* 840px (the SVG's natural width) + the 2x20px padding applied at the
+         desktop breakpoint, so the diagram lands at exactly 1:1 on wide screens
+         rather than being squeezed by the padding. */
+      --max: 880px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #0d1117;
+        --fg: #c9d1d9;
+        --muted: #8b949e;
+        --link: #58a6ff;
+        --rule: #21262d;
+        --surface: #161b22;
+        --surface-2: #21262d;
+        --border: #30363d;
+        --strong: #ffffff;
+        --code-bg: #0d1117;
+        --shadow: rgb(0 0 0 / 55%);
+      }
+    }
+
+    :root[data-theme="dark"] {
       color-scheme: dark;
       --bg: #0d1117;
       --fg: #c9d1d9;
       --muted: #8b949e;
       --link: #58a6ff;
       --rule: #21262d;
-      /* 840px (the SVG's natural width) + the 2x20px padding applied at the
-         desktop breakpoint, so the diagram lands at exactly 1:1 on wide screens
-         rather than being squeezed by the padding. */
-      --max: 880px;
+      --surface: #161b22;
+      --surface-2: #21262d;
+      --border: #30363d;
+      --strong: #ffffff;
+      --code-bg: #0d1117;
+      --shadow: rgb(0 0 0 / 55%);
+    }
+
+    /* Inline icons. The diagram's own stylesheet becomes document-scoped once
+       the enhancement swaps it into the DOM, and it carries `svg path { fill:
+       inherit }` -- which beats a fill="currentColor" presentation attribute and
+       leaves every icon on the page black. Setting it from CSS wins that back. */
+    .icon path {
+      fill: currentColor;
     }
 
     * {
@@ -40,14 +104,46 @@
       -webkit-text-size-adjust: 100%;
     }
 
+    /* Shares main's column so the heading lines up with the diagram's left edge.
+       Wraps rather than squeezing: at 320px the two children still fit, but a
+       longer heading or a translated label must not push the control off. */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 12px 10px 2px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+
     main {
       flex: 1 0 auto;
       width: 100%;
       max-width: var(--max);
       margin: 0 auto;
       /* Half the desktop padding: enough to keep the diagram off the screen
-         edges without wasting width on a phone. */
-      padding: 16px 10px 0;
+         edges without wasting width on a phone. The header above supplies the
+         gap at the top. */
+      padding: 8px 10px 0;
+    }
+
+    /* One focus ring for everything interactive. A colour or background change
+       alone is not a focus indicator: it disappears against the hover state and
+       is easy to miss. */
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--link);
+      outline-offset: 2px;
     }
 
     /* The SVG is 840x1433, so width:100% keeps it readable on a phone and the
@@ -88,11 +184,11 @@
       position: absolute;
       z-index: 10;
       max-width: min(320px, calc(100vw - 24px));
-      background: #161b22;
-      border: 1px solid #30363d;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 12px 14px;
-      box-shadow: 0 8px 24px rgb(0 0 0 / 55%);
+      box-shadow: 0 8px 24px var(--shadow);
       font-size: 13.5px;
       line-height: 1.5;
     }
@@ -104,7 +200,7 @@
     .kb-tip h2 {
       margin: 0 0 6px;
       font-size: 14px;
-      color: #fff;
+      color: var(--strong);
     }
 
     .kb-tip p {
@@ -120,7 +216,7 @@
       margin: 0 0 8px;
       padding: 8px 10px;
       overflow-x: auto;
-      background: #0d1117;
+      background: var(--code-bg);
       border: 1px solid var(--rule);
       border-radius: 6px;
       font-size: 12px;
@@ -136,14 +232,14 @@
     }
 
     .kb-keys kbd {
-      background: #21262d;
-      border: 1px solid #30363d;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
       border-bottom-width: 2px;
       border-radius: 4px;
       padding: 1px 6px;
       font: inherit;
       font-size: 12px;
-      color: #fff;
+      color: var(--strong);
     }
 
     .kb-tip ul {
@@ -176,16 +272,196 @@
       text-decoration: underline;
     }
 
+    /* --- theme control ----------------------------------------------------- */
+
+    .theme {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-2);
+    }
+
+    /* 30x26 clears the 24x24 minimum for a pointer target; coarse pointers get
+       more below. */
+    .theme button {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 26px;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      background: none;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .theme button:hover,
+    .theme button:focus-visible {
+      color: var(--fg);
+    }
+
+    /* aria-pressed is the state, so style from it rather than a parallel class:
+       one source of truth for "which theme is on". */
+    .theme button[aria-pressed="true"] {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--strong);
+    }
+
+    /* --- download control -------------------------------------------------- */
+
+    /* Floats rather than sitting in the flow: the diagram is 1433px tall, so a
+       control placed above or below it is off screen for most of the scroll.
+       Under .kb-tip's z-index, so an open tooltip is never covered by it. */
+    .kb-dl {
+      position: fixed;
+      z-index: 5;
+      right: 12px;
+      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 4px 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      box-shadow: 0 4px 16px var(--shadow);
+    }
+
+    .kb-dl-icon {
+      margin: 0 2px 0 4px;
+      color: var(--muted);
+    }
+
+    .kb-dl a,
+    .kb-dl button {
+      appearance: none;
+      padding: 5px 10px;
+      border: 0;
+      border-radius: 999px;
+      background: none;
+      color: var(--fg);
+      font: inherit;
+      font-size: 13px;
+      line-height: 1;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .kb-dl a:hover,
+    .kb-dl button:hover,
+    .kb-dl a:focus-visible,
+    .kb-dl button:focus-visible {
+      background: var(--surface-2);
+      color: var(--strong);
+    }
+
+    .kb-dl button:disabled {
+      color: var(--muted);
+      cursor: progress;
+    }
+
+    /* Only once JS is driving it: the class is added by the script, so with JS
+       off the control simply stays put rather than being stuck hidden.
+       visibility, not display, so it leaves the tab order while hidden. */
+    .kb-dl-auto {
+      visibility: hidden;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .18s ease, transform .18s ease, visibility .18s;
+    }
+
+    .kb-dl-auto.kb-dl-on {
+      visibility: visible;
+      opacity: 1;
+      transform: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .kb-dl-auto {
+        transition: none;
+      }
+    }
+
+    /* Touch targets, not hover targets. */
+    @media (pointer: coarse) {
+
+      .kb-dl a,
+      .kb-dl button {
+        padding: 8px 12px;
+      }
+
+      .theme button {
+        width: 38px;
+        height: 32px;
+      }
+    }
+
     /* Breathing room only once there is room to spare. */
     @media (min-width: 880px) {
+      header {
+        padding: 24px 20px 4px;
+      }
+
       main {
-        padding: 32px 20px 0;
+        padding: 12px 20px 0;
+      }
+
+      .kb-dl {
+        right: 20px;
+        bottom: 20px;
       }
     }
   </style>
 </head>
 
 <body>
+  <!-- A banner landmark in the normal flow, which is what makes this the most
+       accessible of the three places this could go:
+         - it is first in the tab order, so the control is one Tab from the top
+           rather than something you reach after the diagram
+         - <header> + <h1> give the page a heading and a landmark it did not
+           have before; the only headings were the <h2>s inside tooltips
+         - it never covers the diagram, at any width or zoom level. A sticky bar
+           would, permanently, and at 400% zoom it would eat the viewport
+           (WCAG 1.4.10); folding it into the download control would grow a
+           floating element that already overlaps the diagram below 880px.
+       It scrolls away with the content, which is right for a preference that is
+       set once and remembered. -->
+  <header>
+    <h1>Keymap</h1>
+
+    <!-- Rendered up front rather than by script, so the control is not a thing
+         that pops in. The buttons do nothing until the script wires them up,
+         which is why the group is hidden until then: an inert theme switch is
+         worse than none. -->
+    <div class="theme" role="group" aria-label="Colour theme" hidden>
+      <button type="button" data-theme-choice="light" aria-pressed="false" aria-label="Light theme" title="Light">
+        <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path fill="currentColor"
+            d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm0-4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM8 0a.75.75 0 0 1 .75.75v1a.75.75 0 0 1-1.5 0v-1A.75.75 0 0 1 8 0Zm0 13a.75.75 0 0 1 .75.75v1a.75.75 0 0 1-1.5 0v-1A.75.75 0 0 1 8 13ZM16 8a.75.75 0 0 1-.75.75h-1a.75.75 0 0 1 0-1.5h1A.75.75 0 0 1 16 8ZM3 8a.75.75 0 0 1-.75.75h-1a.75.75 0 0 1 0-1.5h1A.75.75 0 0 1 3 8Zm10.657-5.657a.75.75 0 0 1 0 1.061l-.708.707a.75.75 0 1 1-1.06-1.06l.707-.708a.75.75 0 0 1 1.06 0ZM4.111 11.889a.75.75 0 0 1 0 1.06l-.707.708a.75.75 0 0 1-1.061-1.061l.707-.707a.75.75 0 0 1 1.061 0ZM13.657 13.657a.75.75 0 0 1-1.061 0l-.707-.708a.75.75 0 0 1 1.06-1.06l.708.707a.75.75 0 0 1 0 1.06ZM4.111 4.111a.75.75 0 0 1-1.06 0l-.708-.707a.75.75 0 1 1 1.06-1.061l.708.707a.75.75 0 0 1 0 1.061Z" />
+        </svg>
+      </button>
+      <button type="button" data-theme-choice="system" aria-pressed="false" aria-label="Follow the system theme"
+        title="System">
+        <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path fill="currentColor"
+            d="M1.75 2h12.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 14.25 13H9.5v1h1.75a.75.75 0 0 1 0 1.5h-6.5a.75.75 0 0 1 0-1.5H6.5v-1H1.75A1.75 1.75 0 0 1 0 11.25v-7.5C0 2.784.784 2 1.75 2Zm0 1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z" />
+        </svg>
+      </button>
+      <button type="button" data-theme-choice="dark" aria-pressed="false" aria-label="Dark theme" title="Dark">
+        <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path fill="currentColor"
+            d="M9.598 1.591a.75.75 0 0 1 .785-.175 7 7 0 1 1-8.967 8.967.75.75 0 0 1 .961-.96 5.5 5.5 0 0 0 7.046-7.046.75.75 0 0 1 .175-.786Zm1.616 1.945a7 7 0 0 1-7.678 7.678 5.5 5.5 0 1 0 7.678-7.678Z" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
   <main>
     <!-- src points at the diagram on GitHub so that opening this file directly
          in a browser previews correctly. scripts/build-site.mjs rewrites it to a
@@ -197,6 +473,26 @@
       src="https://raw.githubusercontent.com/sterrenb/zmk-config/main/keymap-drawer/corne.svg" width="840" height="1433"
       alt="Keymap diagram: base, lower, raise, adjust and mouse layers for a 42-key split keyboard.">
   </main>
+
+  <!-- Fixed, so it lives outside <main>'s max-width column. The href is the
+       same URL as the <img> above and is rewritten by scripts/build-site.mjs in
+       the same pass, which is why the build checks that no occurrence survives.
+
+       `download` is honoured only for a same-origin URL -- true of the deployed
+       page, not of this file opened straight from disk, where the link falls
+       back to navigating to GitHub. The PNG button is added by the script:
+       rasterising happens in the browser, so there is nothing to offer without
+       JS. -->
+  <aside class="kb-dl" aria-label="Download the diagram">
+    <svg class="icon kb-dl-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path fill="currentColor"
+        d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 0 1 1.06-1.06l2.22 2.22V2.25A.75.75 0 0 1 8 1.5Z" />
+      <path fill="currentColor"
+        d="M2.75 9.5a.75.75 0 0 1 .75.75v2c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-2a.75.75 0 0 1 1.5 0v2A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-2a.75.75 0 0 1 .75-.75Z" />
+    </svg>
+    <a href="https://raw.githubusercontent.com/sterrenb/zmk-config/main/keymap-drawer/corne.svg" download="keymap.svg"
+      aria-label="Download the diagram as SVG">SVG</a>
+  </aside>
 
   <footer>
     <a href="https://github.com/sterrenb/zmk-config">sterrenb/zmk-config</a>
@@ -348,6 +644,172 @@
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') close();
       });
+    })();
+
+    /*
+     * Theme control. Three states, of which "system" is the absence of an
+     * override: no attribute, nothing stored, so the media query decides and
+     * the page follows the OS as it changes -- including while open, which is
+     * why nothing here reads prefers-color-scheme. The head script has already
+     * applied any stored choice; this only wires up the buttons and keeps
+     * aria-pressed in step.
+     */
+    (function () {
+      const KEY = 'theme';
+      const group = document.querySelector('.theme');
+      if (!group) return;
+
+      const root = document.documentElement;
+      const buttons = [...group.querySelectorAll('[data-theme-choice]')];
+
+      const sync = () => {
+        const current = root.dataset.theme || 'system';
+        for (const button of buttons) {
+          button.setAttribute('aria-pressed', String(button.dataset.themeChoice === current));
+        }
+      };
+
+      for (const button of buttons) {
+        button.addEventListener('click', () => {
+          const choice = button.dataset.themeChoice;
+          try {
+            if (choice === 'system') localStorage.removeItem(KEY);
+            else localStorage.setItem(KEY, choice);
+          } catch (e) {
+            // Private mode: the choice still applies, it just will not persist.
+          }
+          if (choice === 'system') delete root.dataset.theme;
+          else root.dataset.theme = choice;
+          sync();
+        });
+      }
+
+      sync();
+      // Only now is it more than decoration.
+      group.hidden = false;
+    })();
+
+    /*
+     * Download control. Deliberately independent of the enhancement above: it
+     * fetches the diagram itself -- the same URL the <img> already loaded, so a
+     * cache hit -- rather than sharing state, so a missing tooltips.json cannot
+     * take the downloads with it.
+     *
+     * Both exports are the diagram as keymap-drawer drew it, never the live
+     * DOM: the tooltip dots are a site affordance and have no business in a
+     * file you save. That also keeps a downloaded SVG byte-identical to the one
+     * attached to the matching release.
+     *
+     * The PNG is rasterised here rather than at build time because a browser is
+     * the only renderer that gets this diagram right -- SVG-native converters
+     * drop the CSS custom properties and `translate:` that the drawer config
+     * leans on. See the comment in .github/workflows/release.yml.
+     */
+    (function () {
+      const box = document.querySelector('.kb-dl');
+      const svgLink = box?.querySelector('a[download]');
+      const frame = document.querySelector('main');
+      if (!box || !svgLink || !frame) return;
+
+      // 1680x2866, matching the PNG attached to each release.
+      const SCALE = 2;
+
+      let pending = null;
+      const markup = () =>
+        (pending ||= fetch(svgLink.href).then((res) => (res.ok ? res.text() : Promise.reject(new Error(res.status)))));
+
+      /* The base layer's display-name is the stamped version, so a saved file
+         can identify itself the way the release assets do. Guarded, because
+         that layer is free to be named anything -- only a version is used. */
+      function stem(svg) {
+        const match = svg.match(/<g[^>]*class="layer-([^"]*)"/);
+        return match && /^\d+\.\d+\.\d+$/.test(match[1]) ? `keymap-${match[1]}` : 'keymap';
+      }
+
+      function save(blob, name) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        a.click();
+        // Deferred: revoking in the same task cancels the download in Safari.
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+      }
+
+      function rasterise(svg) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+          const image = new Image();
+
+          image.onload = () => {
+            const canvas = document.createElement('canvas');
+            // The source keeps its width/height attributes, so the intrinsic
+            // size is the diagram's own 840x1433 rather than a guess.
+            canvas.width = image.naturalWidth * SCALE;
+            canvas.height = image.naturalHeight * SCALE;
+
+            const ctx = canvas.getContext('2d');
+            // The diagram carries no background and its legends are near-black,
+            // so a transparent PNG is unreadable on anything dark -- including
+            // this page. release.yml renders on white for the same reason.
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            URL.revokeObjectURL(url);
+            canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))), 'image/png');
+          };
+
+          image.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('could not load the diagram'));
+          };
+
+          image.src = url;
+        });
+      }
+
+      const png = document.createElement('button');
+      png.type = 'button';
+      png.textContent = 'PNG';
+      png.setAttribute('aria-label', 'Download the diagram as PNG');
+      box.appendChild(png);
+
+      png.addEventListener('click', async () => {
+        png.disabled = true;
+        png.textContent = '...';
+        try {
+          const svg = await markup();
+          save(await rasterise(svg), `${stem(svg)}.png`);
+          png.textContent = 'PNG';
+        } catch {
+          // The SVG link still works, so say what failed and leave it at that.
+          png.textContent = 'failed';
+          setTimeout(() => (png.textContent = 'PNG'), 2000);
+        } finally {
+          png.disabled = false;
+        }
+      });
+
+      /* <main> is observed rather than the diagram itself: the enhancement
+         above replaces the <img> with an inline <svg>, and an observer holding
+         the detached <img> would report it as gone forever. main contains only
+         the diagram, so it amounts to the same question. */
+      if (!('IntersectionObserver' in window)) return;
+
+      // Starts on, so the control does not blink for the usual case of landing
+      // at the top of the page with the diagram already in view.
+      box.classList.add('kb-dl-auto', 'kb-dl-on');
+
+      new IntersectionObserver(([entry]) => {
+        box.classList.toggle('kb-dl-on', entry.isIntersecting);
+        // Warm the fetch and name the file once it is actually reachable.
+        if (entry.isIntersecting) {
+          markup()
+            .then((svg) => (svgLink.download = `${stem(svg)}.svg`))
+            .catch(() => {});
+        }
+      }).observe(frame);
     })();
   </script>
 </body>
