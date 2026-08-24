@@ -8,4 +8,4 @@
 // No "v" prefix: the Toucan2's nice!view Gem draws this in a monospace 21.6px
 // font into 121px of usable width, so only 5 characters fit. The git tag and
 // release branch keep the "v" — prepare-release.yml strips it here.
-#define KEYMAP_VERSION "1.3.0"
+#define KEYMAP_VERSION "1.3.1"
