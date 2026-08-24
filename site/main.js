@@ -137,11 +137,19 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   let activeSources = [];
   let activePeers = [];
   let leaveTimeout = null;
+  let openTimeout = null;
 
   const cancelLeave = () => {
     if (leaveTimeout) {
       clearTimeout(leaveTimeout);
       leaveTimeout = null;
+    }
+  };
+
+  const cancelOpen = () => {
+    if (openTimeout) {
+      clearTimeout(openTimeout);
+      openTimeout = null;
     }
   };
 
@@ -221,6 +229,7 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
 
   function close() {
     cancelLeave();
+    cancelOpen();
     tip.hidden = true;
     openTarget?.classList.remove('kb-open');
     openTarget = null;
@@ -294,6 +303,10 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
 
   tip.addEventListener('mouseenter', () => {
     if (tipMode === 'hover') cancelLeave();
+    if (tipMode === 'hover') {
+      cancelLeave();
+      cancelOpen();
+    }
   });
   tip.addEventListener('mouseleave', () => {
     if (tipMode === 'hover') scheduleLeave();
@@ -303,6 +316,19 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
     target.addEventListener('mouseenter', () => {
       cancelLeave();
       if (tipMode === 'hover') open(target);
+      cancelOpen();
+      if (tipMode === 'hover') {
+        if (openTarget) {
+          // Delay opening so the cursor can cross an intermediate key on its
+          // way to the currently open tooltip without losing it.
+          openTimeout = setTimeout(() => {
+            openTimeout = null;
+            open(target);
+          }, 150);
+        } else {
+          open(target);
+        }
+      }
     });
 
     target.addEventListener('mouseleave', () => {
