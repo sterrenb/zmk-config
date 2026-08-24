@@ -136,6 +136,21 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   let openTarget = null;
   let activeSources = [];
   let activePeers = [];
+  let leaveTimeout = null;
+
+  const cancelLeave = () => {
+    if (leaveTimeout) {
+      clearTimeout(leaveTimeout);
+      leaveTimeout = null;
+    }
+  };
+
+  const scheduleLeave = () => {
+    cancelLeave();
+    leaveTimeout = setTimeout(() => {
+      close();
+    }, 120);
+  };
 
   const el = (tag, text, parent) => {
     const node = document.createElement(tag);
@@ -146,7 +161,20 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
 
   function render(content) {
     tip.textContent = '';
-    if (content.title) el('h2', content.title, tip);
+    if (content.title) {
+      const h2 = el('h2', null, tip);
+      el('span', content.title, h2);
+      if (content.zmkDoc) {
+        const docLink = el('a', null, h2);
+        docLink.className = 'kb-zmk-doc-link';
+        docLink.href = content.zmkDoc;
+        docLink.target = '_blank';
+        docLink.rel = 'noopener noreferrer';
+        docLink.title = 'View official ZMK documentation';
+        docLink.setAttribute('aria-label', 'ZMK Documentation');
+        docLink.innerHTML = `<svg class="icon" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.5.75a.75.75 0 0 1 .75-.75h3.25a.75.75 0 0 1 .75-.75v3.25a.75.75 0 0 1-1.5 0V4.31l-4.72 4.72a.75.75 0 0 1-1.06-1.06l4.72-4.72H11a.75.75 0 0 1-.75-.75Z"/></svg>`;
+      }
+    }
     if (content.keys) {
       const row = el('div', null, tip);
       row.className = 'kb-keys';
@@ -155,9 +183,19 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
         el('kbd', k, row);
       });
     }
-    if (content.body) el('p', content.body, tip);
+    if (content.body) {
+      const p = el('p', null, tip);
+      const parts = content.body.split(/(`[^`]+`)/g);
+      for (const part of parts) {
+        if (part.startsWith('`') && part.endsWith('`')) {
+          el('kbd', part.slice(1, -1), p);
+        } else if (part) {
+          p.appendChild(document.createTextNode(part));
+        }
+      }
+    }
     if (content.pre) el('pre', content.pre, tip);
-    if (content.links) {
+    if (content.links && content.links.length > 0) {
       const list = el('ul', null, tip);
       for (const link of content.links) {
         const a = el('a', link.text, el('li', null, list));
@@ -182,6 +220,7 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   }
 
   function close() {
+    cancelLeave();
     tip.hidden = true;
     openTarget?.classList.remove('kb-open');
     openTarget = null;
@@ -196,6 +235,7 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   }
 
   function open(target) {
+    cancelLeave();
     const meta = targets.get(target);
     if (!meta) return;
 
@@ -214,7 +254,7 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
       const layerG = target.closest('g[class^="layer-"]');
       if (layerG) {
         for (const [k, m] of targets.entries()) {
-          if (m.id === meta.id && k !== target && layerG.contains(k)) {
+          if (m.id === meta.id && layerG.contains(k)) {
             k.classList.add('kb-group-peer');
             activePeers.push(k);
           }
@@ -252,13 +292,21 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
     modeGroup.hidden = false;
   }
 
+  tip.addEventListener('mouseenter', () => {
+    if (tipMode === 'hover') cancelLeave();
+  });
+  tip.addEventListener('mouseleave', () => {
+    if (tipMode === 'hover') scheduleLeave();
+  });
+
   for (const target of targets.keys()) {
     target.addEventListener('mouseenter', () => {
+      cancelLeave();
       if (tipMode === 'hover') open(target);
     });
 
     target.addEventListener('mouseleave', () => {
-      if (tipMode === 'hover' && openTarget === target) close();
+      if (tipMode === 'hover') scheduleLeave();
     });
 
     const toggle = (event) => {

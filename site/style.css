@@ -256,18 +256,14 @@ g.combo:focus-visible rect {
   stroke-width: 2;
 }
 
-.kb-source rect.key {
-  stroke: var(--link) !important;
-  stroke-width: 2 !important;
-  fill: var(--surface-2) !important;
-}
-
-/* Group highlighting for related keys (e.g. Home Row Mods) */
+/* Highlights for combo source keys and group peer keys (e.g. Home Row Mods) */
+.kb-source rect.key,
 .kb-group-peer rect.key {
   stroke: var(--link) !important;
   stroke-width: 1.5 !important;
   stroke-dasharray: 4 3 !important;
 }
+
 
 /* --- tooltip ---------------------------------------------------------- */
 
@@ -292,11 +288,39 @@ g.combo:focus-visible rect {
   margin: 0 0 6px;
   font-size: 14px;
   color: var(--strong);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kb-zmk-doc-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.kb-zmk-doc-link:hover,
+.kb-zmk-doc-link:focus-visible {
+  color: var(--link);
 }
 
 .kb-tip p {
   margin: 0 0 8px;
   color: var(--fg);
+}
+
+.kb-tip p kbd {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0px 4px;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--strong);
 }
 
 .kb-tip p:last-child {
