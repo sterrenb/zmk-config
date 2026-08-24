@@ -11,8 +11,7 @@ This configuration uses the [Graphite](https://github.com/rdavison/graphite-layo
 
 Both boards are 42-key with identical key numbering, so the keymap, behaviors and combos live
 once in [`config/shared/`](./config/shared) and each keyboard's `.keymap` is a one-line
-include. See [the multi-keyboard plan](./docs/multi-keyboard-plan.md) for the details and the
-constraints that come with it.
+include.
 
 ## Layout
 

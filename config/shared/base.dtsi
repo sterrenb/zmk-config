@@ -5,21 +5,7 @@
 #include <dt-bindings/zmk/pointing.h>
 
 // Layers
-//
-// Orthogonal by hand, following Miryoku: a layer is held with one thumb and its
-// content lives entirely on the *other* hand, so you never contort.
-//   NAV   held by the LEFT thumb  -> right-hand content
-//   NUM   held by the RIGHT thumb -> left-hand content
-//   MEDIA held by BOTH (tri-layer)
-//
-// ORDER IS LOAD-BEARING. The Toucan2 shield hard-codes these indices:
-//   is_touching_processor  bindings = <&mo 4>      -> MOUSE while a finger rests on the trackpad
-//   trackpad_listener      scroller layers = <1 2> -> touch-scroll on NAV / NUM
-//
-// Reordering these, or inserting a layer before MOUSE, silently repoints the
-// trackpad at the wrong layer: the build still succeeds and the pointer just
-// misbehaves. Layer names are also capped at 5 characters by the Toucan2's
-// display. See docs/multi-keyboard-plan.md §5.1.
+// Note: Layer indices (0..4) are mapped by the Toucan2 trackpad listener.
 #define BASE 0
 #define NAV 1
 #define NUM 2
