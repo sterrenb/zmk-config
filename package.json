@@ -1,0 +1,15 @@
+{
+  "name": "zmk-config-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:tooltips": "node scripts/build-tooltips.mjs site/tooltips.json",
+    "dev": "npm run build:tooltips && vite",
+    "build": "npm run build:tooltips && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.14"
+  }
+}

@@ -1,0 +1,512 @@
+/* Light is the base, dark is an override, and the override is applied both
+   by the media query and by the attribute. Three states fall out of that:
+     [data-theme="light"]  -- the :not() excludes it from the media block
+     [data-theme="dark"]   -- the attribute rule comes last and wins
+     no attribute ("system") -- the media query decides
+   Never give a colour its only definition inside the media block, or the
+   explicit-light case loses it. */
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --fg: #24292f;
+  --muted: #57606a;
+  --link: #0969da;
+  --rule: #d0d7de;
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --border: #d0d7de;
+  --strong: #1f2328;
+  --code-bg: #f6f8fa;
+  --shadow: rgb(31 35 40 / 18%);
+  /* 840px (the SVG's natural width) + the 2x20px padding applied at the
+     desktop breakpoint, so the diagram lands at exactly 1:1 on wide screens
+     rather than being squeezed by the padding. */
+  --max: 880px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d1117;
+    --fg: #c9d1d9;
+    --muted: #8b949e;
+    --link: #58a6ff;
+    --rule: #21262d;
+    --surface: #161b22;
+    --surface-2: #21262d;
+    --border: #30363d;
+    --strong: #ffffff;
+    --code-bg: #0d1117;
+    --shadow: rgb(0 0 0 / 55%);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1117;
+  --fg: #c9d1d9;
+  --muted: #8b949e;
+  --link: #58a6ff;
+  --rule: #21262d;
+  --surface: #161b22;
+  --surface-2: #21262d;
+  --border: #30363d;
+  --strong: #ffffff;
+  --code-bg: #0d1117;
+  --shadow: rgb(0 0 0 / 55%);
+}
+
+/* Inline icons. The diagram's own stylesheet becomes document-scoped once
+   the enhancement swaps it into the DOM, and it carries `svg path { fill:
+   inherit }` -- which beats a fill="currentColor" presentation attribute and
+   leaves every icon on the page black. Setting it from CSS wins that back. */
+.icon path {
+  fill: currentColor;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Shares main's column so the heading lines up with the diagram's left edge.
+   Wraps rather than squeezing: at 320px the two children still fit, but a
+   longer heading or a translated label must not push the control off. */
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 12px 10px 2px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+main {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: var(--max);
+  margin: 0 auto;
+  /* Half the desktop padding: enough to keep the diagram off the screen
+     edges without wasting width on a phone. The header above supplies the
+     gap at the top. */
+  padding: 8px 10px 0;
+}
+
+/* One focus ring for everything interactive. A colour or background change
+   alone is not a focus indicator: it disappears against the hover state and
+   is easy to miss. */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+/* The SVG is 840x1433, so width:100% keeps it readable on a phone and the
+   page simply scrolls. */
+.keymap {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  /* Key legends are text nodes, so clicking a key would otherwise start a
+     text selection and drag-select the diagram. Tooltip contents stay
+     selectable -- this is scoped to the diagram only. */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* --- documented keys ------------------------------------------------- */
+
+.kb-doc {
+  cursor: pointer;
+}
+
+/* Corner dot marking a key that has an explanation. Without a marker,
+   discoverability is nil -- nobody clicks keys speculatively. */
+.kb-dot {
+  fill: var(--link);
+  pointer-events: none;
+}
+
+.kb-doc:hover .kb-dot,
+.kb-doc.kb-open .kb-dot {
+  r: 4.5;
+}
+
+/* --- documented combos ----------------------------------------------- */
+
+.kb-combo-doc {
+  cursor: pointer;
+}
+
+.kb-combo-dot {
+  fill: var(--link);
+  pointer-events: none;
+}
+
+.kb-combo-doc:hover .kb-combo-dot,
+.kb-combo-doc.kb-open .kb-combo-dot {
+  r: 1.8;
+}
+
+.kb-combo-doc:hover rect.combo,
+.kb-combo-doc.kb-open rect.combo {
+  stroke: var(--link);
+  stroke-width: 1.5;
+}
+
+.kb-combo-doc:hover path.combo,
+.kb-combo-doc.kb-open path.combo {
+  stroke: var(--link);
+  stroke-width: 1.5;
+}
+
+.kb-doc:focus-visible rect.key {
+  stroke: var(--link) !important;
+  stroke-width: 2px !important;
+}
+
+.kb-combo-doc:focus-visible rect.combo,
+.kb-combo-doc:focus-visible path.combo {
+  stroke: var(--link) !important;
+  stroke-width: 2px !important;
+}
+
+svg g.kb-doc:focus,
+svg g.kb-combo-doc:focus {
+  outline: none;
+}
+
+.kb-combo-source rect.key {
+  stroke: var(--link) !important;
+  stroke-width: 2px !important;
+  stroke-dasharray: 4 3;
+}
+
+/* --- tooltip ---------------------------------------------------------- */
+
+.kb-tip {
+  position: absolute;
+  z-index: 10;
+  max-width: min(320px, calc(100vw - 24px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px var(--shadow);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.kb-tip[hidden] {
+  display: none;
+}
+
+.kb-tip h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--strong);
+}
+
+.kb-tip p {
+  margin: 0 0 8px;
+  color: var(--fg);
+}
+
+.kb-tip p:last-child {
+  margin-bottom: 0;
+}
+
+.kb-tip pre {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.kb-tip kbd {
+  display: inline-block;
+  vertical-align: baseline;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--strong);
+  white-space: nowrap;
+}
+
+.kb-keys {
+  margin: 0 0 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.kb-keys kbd {
+  padding: 1px 6px;
+  font-size: 12px;
+}
+
+.kb-inline-chord {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+
+.kb-tip ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kb-tip a {
+  color: var(--link);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.kb-tip-doc {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--muted);
+  opacity: 0.6;
+  text-decoration: none;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 2;
+  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.kb-tip-doc:hover {
+  opacity: 1;
+  color: var(--link);
+  background: var(--surface-2);
+  transform: scale(1.08);
+}
+
+footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--rule);
+  margin-top: 32px;
+  padding: 20px 16px 28px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+footer a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+footer a:hover,
+footer a:focus-visible {
+  text-decoration: underline;
+}
+
+.controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- mode & theme controls --------------------------------------------- */
+
+.theme,
+.tip-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.tip-mode {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tip-mode {
+    display: inline-flex;
+  }
+}
+
+/* 30x26 clears the 24x24 minimum for a pointer target; coarse pointers get
+   more below. */
+.theme button,
+.tip-mode button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.theme button:hover,
+.theme button:focus-visible,
+.tip-mode button:hover,
+.tip-mode button:focus-visible {
+  color: var(--fg);
+}
+
+/* aria-pressed is the state, so style from it rather than a parallel class:
+   one source of truth for "which theme is on". */
+.theme button[aria-pressed="true"],
+.tip-mode button[aria-pressed="true"] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--strong);
+}
+
+/* --- download control -------------------------------------------------- */
+
+/* Floats rather than sitting in the flow: the diagram is 1433px tall, so a
+   control placed above or below it is off screen for most of the scroll.
+   Under .kb-tip's z-index, so an open tooltip is never covered by it. */
+.kb-dl {
+  position: fixed;
+  z-index: 5;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 4px 16px var(--shadow);
+}
+
+.kb-dl-icon {
+  margin: 0 2px 0 4px;
+  color: var(--muted);
+}
+
+.kb-dl a,
+.kb-dl button {
+  appearance: none;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.kb-dl a:hover,
+.kb-dl button:hover,
+.kb-dl a:focus-visible,
+.kb-dl button:focus-visible {
+  background: var(--surface-2);
+  color: var(--strong);
+}
+
+.kb-dl button:disabled {
+  color: var(--muted);
+  cursor: progress;
+}
+
+/* Only once JS is driving it: the class is added by the script, so with JS
+   off the control simply stays put rather than being stuck hidden.
+   visibility, not display, so it leaves the tab order while hidden. */
+.kb-dl-auto {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .18s ease, transform .18s ease, visibility .18s;
+}
+
+.kb-dl-auto.kb-dl-on {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-dl-auto {
+    transition: none;
+  }
+}
+
+/* Touch targets, not hover targets. */
+@media (pointer: coarse) {
+
+  .kb-dl a,
+  .kb-dl button {
+    padding: 8px 12px;
+  }
+
+  .theme button,
+  .tip-mode button {
+    width: 38px;
+    height: 32px;
+  }
+}
+
+/* Breathing room only once there is room to spare. */
+@media (min-width: 880px) {
+  header {
+    padding: 24px 20px 4px;
+  }
+
+  main {
+    padding: 12px 20px 0;
+  }
+
+  .kb-dl {
+    right: 20px;
+    bottom: 20px;
+  }
+}

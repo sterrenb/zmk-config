@@ -11,14 +11,15 @@
 //
 //     { keys: { "<layerIndex>.<keyPosition>": "<id>" }, content: { "<id>": {...} } }
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = new URL('..', import.meta.url);
 const keymapPath = fileURLToPath(new URL('config/shared/keymap.dtsi', root));
-const outFile = process.argv[2] ?? 'dist/tooltips.json';
-const svgPath = process.argv[3] ?? 'keymap-drawer/corne.svg';
+const outFile = process.argv[2] ?? 'site/tooltips.json';
+const defaultSvg = existsSync('keymap-drawer/corne.local.svg') ? 'keymap-drawer/corne.local.svg' : 'keymap-drawer/corne.svg';
+const svgPath = process.argv[3] ?? defaultSvg;
 
 const defs = (await import(new URL('site/tooltips.mjs', root))).default;
 
