@@ -31,6 +31,10 @@ draw_config:
       font-family: system-ui, sans-serif;
     }
 
+    svg.keymap a {
+      pointer-events: none;
+    }
+
     /* Hide capitalize_i combo (index 2) to prevent drawing line across split */
     .combopos-2 {
         display: none;

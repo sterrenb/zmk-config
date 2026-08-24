@@ -58,24 +58,20 @@ export default {
     match: '&ltt',
     title: 'Layer-tap thumb',
     body:
-      'Tap for backspace, hold for the Num layer. Hold together with the Nav thumb for Media (tri-layer). ' +
+      'Tap for backspace, hold for the `Num` layer. Hold together with the `Nav` thumb for `Media` (tri-layer). ' +
       'Quick tap-then-hold repeats backspace.',
     pre: 'flavor:        hold-preferred\nquick-tap-ms:  175',
-    links: [
-      {
-        text: 'ZMK hold-tap behaviour',
-        href: 'https://zmk.dev/docs/keymaps/behaviors/hold-tap',
-      },
-    ],
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/layers#layer-tap',
   },
 
   'thumb-layer-tap-norepeat': {
     match: '&ltt_norepeat',
     title: 'Layer-tap thumb',
     body:
-      'Tap for escape, hold for the Nav layer. Hold together with the Num thumb for Media (tri-layer). ' +
-      'No repeat window so a quick tap-then-hold enters Nav immediately.',
+      'Tap for escape, hold for the `Nav` layer. Hold together with the `Num` thumb for `Media` (tri-layer). ' +
+      'No repeat window so a quick tap-then-hold enters `Nav` immediately.',
     pre: 'flavor:        hold-preferred\nquick-tap-ms:  (disabled)',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/layers#layer-tap',
   },
 
   // --- Combos --------------------------------------------------------------
@@ -84,20 +80,18 @@ export default {
     combo: true,
     match: '&kp CAPSLOCK',
     title: 'Caps Lock',
-    body: 'Press Z and \' simultaneously on the inner top row to toggle Caps Lock.',
     keys: ['Z', '\''],
     body: 'Toggles standard Caps Lock.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/key-press',
   },
 
   'caps-word': {
     combo: true,
     match: '&caps_word',
     title: 'Caps Word',
-    body:
-      'Press V and P simultaneously on the inner bottom row. ' +
-      'Capitalizes letters automatically until a space or punctuation is pressed.',
     keys: ['V', 'K'],
     body: 'Capitalizes words until space, punctuation, or backspace is pressed.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/caps-word',
   },
 
   'clipboard-copy': {
@@ -134,7 +128,7 @@ export default {
     keys: ['Ctrl', 'Y'],
     body:
       'The Windows binding. Most other platforms and many editors use ' +
-      'Ctrl+Shift+Z instead, so this one is the least portable key on the layer.',
+      '`Ctrl+Shift+Z` instead, so this one is the least portable key on the layer.',
   },
 
   // --- Nav, left hand: OS navigation ---------------------------------------
@@ -191,7 +185,7 @@ export default {
     title: 'Context menu',
     body:
       'The dedicated menu key, equivalent to a right-click on whatever currently ' +
-      'has focus. Distinct from Shift+F10 in a few applications.',
+      'has focus. Distinct from `Shift+F10` in a few applications.',
   },
 
   // --- Nav, right hand -----------------------------------------------------
@@ -202,19 +196,19 @@ export default {
     body:
       'Toggles overtype mode, where typing replaces the character under the ' +
       'cursor instead of pushing it along. Also the paste half of the older ' +
-      'Shift+Insert / Ctrl+Insert clipboard bindings.',
+      '`Shift+Insert` / `Ctrl+Insert` clipboard bindings.',
   },
 
   'line-home': {
     match: '&kp HOME',
     title: 'Start of line',
-    body: 'Add Ctrl (left home row) for the start of the document.',
+    body: 'Add `Ctrl` (left home row) for the start of the document.',
   },
 
   'line-end': {
     match: '&kp END',
     title: 'End of line',
-    body: 'Add Ctrl (left home row) for the end of the document.',
+    body: 'Add `Ctrl` (left home row) for the end of the document.',
   },
 
   'page-up': {
@@ -261,6 +255,7 @@ export default {
         href: 'https://zmk.dev/docs/keymaps/behaviors/bluetooth',
       },
     ],
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/bluetooth',
   },
 
   'bluetooth-clear': {
@@ -270,6 +265,7 @@ export default {
       'Forgets the pairing on the currently selected profile only. Use it when a ' +
       'host will not reconnect: clear here, remove the keyboard on that host, ' +
       'then pair again.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/bluetooth',
   },
 
   'output-toggle': {
@@ -279,6 +275,7 @@ export default {
       'Switches between USB and Bluetooth. Worth knowing when the keyboard is ' +
       'plugged in but typing into the wrong machine -- USB does not automatically ' +
       'win over an active Bluetooth connection.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/outputs',
   },
 
   'lock-screen': {
@@ -286,7 +283,7 @@ export default {
     title: 'Lock screen',
     keys: ['Win', 'L'],
     body:
-      'Sent as a dedicated HID consumer usage rather than the Win+L chord, so it ' +
+      'Sent as a dedicated HID consumer usage rather than the `Win+L` chord, so it ' +
       'does not depend on the modifier reaching the host first.',
   },
 
@@ -336,8 +333,9 @@ export default {
     keys: ['hold 1s'],
     body:
       'Reboots the half this key is on. Harmless -- it does not erase settings or ' +
-      'firmware. Nav carries the left half, Num the right, because the behaviour ' +
+      'firmware. `Nav` carries the left half, `Num` the right, because the behaviour ' +
       'always acts on the half whose key you pressed.',
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/reset',
   },
 
   'bootloader': {
@@ -347,12 +345,7 @@ export default {
     body:
       'Reboots the half this key is on into the UF2 bootloader for flashing firmware. ' +
       'Must be held for 1 second to prevent accidental triggers.',
-    links: [
-      {
-        text: 'ZMK reset behaviours',
-        href: 'https://zmk.dev/docs/keymaps/behaviors/reset',
-      },
-    ],
+    zmkDoc: 'https://zmk.dev/docs/keymaps/behaviors/reset#bootloader',
   },
 
   // --- Mouse ---------------------------------------------------------------
