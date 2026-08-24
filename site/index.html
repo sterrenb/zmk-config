@@ -272,9 +272,16 @@
       text-decoration: underline;
     }
 
-    /* --- theme control ----------------------------------------------------- */
+    .controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-    .theme {
+    /* --- mode & theme controls --------------------------------------------- */
+
+    .theme,
+    .tip-mode {
       display: inline-flex;
       align-items: center;
       gap: 2px;
@@ -284,9 +291,20 @@
       background: var(--surface-2);
     }
 
+    .tip-mode {
+      display: none;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .tip-mode {
+        display: inline-flex;
+      }
+    }
+
     /* 30x26 clears the 24x24 minimum for a pointer target; coarse pointers get
        more below. */
-    .theme button {
+    .theme button,
+    .tip-mode button {
       display: grid;
       place-items: center;
       width: 30px;
@@ -300,13 +318,16 @@
     }
 
     .theme button:hover,
-    .theme button:focus-visible {
+    .theme button:focus-visible,
+    .tip-mode button:hover,
+    .tip-mode button:focus-visible {
       color: var(--fg);
     }
 
     /* aria-pressed is the state, so style from it rather than a parallel class:
        one source of truth for "which theme is on". */
-    .theme button[aria-pressed="true"] {
+    .theme button[aria-pressed="true"],
+    .tip-mode button[aria-pressed="true"] {
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--strong);
@@ -395,7 +416,8 @@
         padding: 8px 12px;
       }
 
-      .theme button {
+      .theme button,
+      .tip-mode button {
         width: 38px;
         height: 32px;
       }
@@ -435,30 +457,50 @@
   <header>
     <h1>Keymap</h1>
 
-    <!-- Rendered up front rather than by script, so the control is not a thing
-         that pops in. The buttons do nothing until the script wires them up,
-         which is why the group is hidden until then: an inert theme switch is
-         worse than none. -->
-    <div class="theme" role="group" aria-label="Colour theme" hidden>
-      <button type="button" data-theme-choice="light" aria-pressed="false" aria-label="Light theme" title="Light">
-        <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <path fill="currentColor"
-            d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm0-4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM8 0a.75.75 0 0 1 .75.75v1a.75.75 0 0 1-1.5 0v-1A.75.75 0 0 1 8 0Zm0 13a.75.75 0 0 1 .75.75v1a.75.75 0 0 1-1.5 0v-1A.75.75 0 0 1 8 13ZM16 8a.75.75 0 0 1-.75.75h-1a.75.75 0 0 1 0-1.5h1A.75.75 0 0 1 16 8ZM3 8a.75.75 0 0 1-.75.75h-1a.75.75 0 0 1 0-1.5h1A.75.75 0 0 1 3 8Zm10.657-5.657a.75.75 0 0 1 0 1.061l-.708.707a.75.75 0 1 1-1.06-1.06l.707-.708a.75.75 0 0 1 1.06 0ZM4.111 11.889a.75.75 0 0 1 0 1.06l-.707.708a.75.75 0 0 1-1.061-1.061l.707-.707a.75.75 0 0 1 1.061 0ZM13.657 13.657a.75.75 0 0 1-1.061 0l-.707-.708a.75.75 0 0 1 1.06-1.06l.708.707a.75.75 0 0 1 0 1.06ZM4.111 4.111a.75.75 0 0 1-1.06 0l-.708-.707a.75.75 0 1 1 1.06-1.061l.708.707a.75.75 0 0 1 0 1.061Z" />
-        </svg>
-      </button>
-      <button type="button" data-theme-choice="system" aria-pressed="false" aria-label="Follow the system theme"
-        title="System">
-        <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <path fill="currentColor"
-            d="M1.75 2h12.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 14.25 13H9.5v1h1.75a.75.75 0 0 1 0 1.5h-6.5a.75.75 0 0 1 0-1.5H6.5v-1H1.75A1.75 1.75 0 0 1 0 11.25v-7.5C0 2.784.784 2 1.75 2Zm0 1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z" />
-        </svg>
-      </button>
-      <button type="button" data-theme-choice="dark" aria-pressed="false" aria-label="Dark theme" title="Dark">
-        <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <path fill="currentColor"
-            d="M9.598 1.591a.75.75 0 0 1 .785-.175 7 7 0 1 1-8.967 8.967.75.75 0 0 1 .961-.96 5.5 5.5 0 0 0 7.046-7.046.75.75 0 0 1 .175-.786Zm1.616 1.945a7 7 0 0 1-7.678 7.678 5.5 5.5 0 1 0 7.678-7.678Z" />
-        </svg>
-      </button>
+    <div class="controls">
+      <!-- Tooltip mode control: Desktop only (hidden on touch/mobile via CSS and until JS initializes) -->
+      <div class="tip-mode" role="group" aria-label="Tooltip mode" hidden>
+        <button type="button" data-tip-choice="hover" aria-pressed="true" aria-label="Show tooltips on hover"
+          title="Hover">
+          <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path fill="currentColor"
+              d="M8 1.5a3.5 3.5 0 0 0-3.5 3.5v6a3.5 3.5 0 0 0 7 0V5A3.5 3.5 0 0 0 8 1.5ZM5.5 5A2.5 2.5 0 0 1 8 2.5a2.5 2.5 0 0 1 2.5 2.5v1h-5V5ZM8 3.25a.75.75 0 0 1 .75.75v1a.75.75 0 0 1-1.5 0V4a.75.75 0 0 1 .75-.75Zm-2.5 3.75h5V11a2.5 2.5 0 0 1-5 0V7Z" />
+          </svg>
+        </button>
+        <button type="button" data-tip-choice="click" aria-pressed="false" aria-label="Show tooltips on click"
+          title="Click">
+          <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path fill="currentColor"
+              d="m3.844 1.488 9.5 5.5a.75.75 0 0 1-.03 1.32l-3.87 1.83 2.59 4.316a.75.75 0 0 1-1.288.772l-2.59-4.316-2.914 2.82a.75.75 0 0 1-1.267-.53v-11.2a.75.75 0 0 1 .869-.722Z" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Rendered up front rather than by script, so the control is not a thing
+           that pops in. The buttons do nothing until the script wires them up,
+           which is why the group is hidden until then: an inert theme switch is
+           worse than none. -->
+      <div class="theme" role="group" aria-label="Colour theme" hidden>
+        <button type="button" data-theme-choice="light" aria-pressed="false" aria-label="Light theme" title="Light">
+          <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path fill="currentColor"
+              d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm0-4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM8 0a.75.75 0 0 1 .75.75v1a.75.75 0 0 1-1.5 0v-1A.75.75 0 0 1 8 0Zm0 13a.75.75 0 0 1 .75.75v1a.75.75 0 0 1-1.5 0v-1A.75.75 0 0 1 8 13ZM16 8a.75.75 0 0 1-.75.75h-1a.75.75 0 0 1 0-1.5h1A.75.75 0 0 1 16 8ZM3 8a.75.75 0 0 1-.75.75h-1a.75.75 0 0 1 0-1.5h1A.75.75 0 0 1 3 8Zm10.657-5.657a.75.75 0 0 1 0 1.061l-.708.707a.75.75 0 1 1-1.06-1.06l.707-.708a.75.75 0 0 1 1.06 0ZM4.111 11.889a.75.75 0 0 1 0 1.06l-.707.708a.75.75 0 0 1-1.061-1.061l.707-.707a.75.75 0 0 1 1.061 0ZM13.657 13.657a.75.75 0 0 1-1.061 0l-.707-.708a.75.75 0 0 1 1.06-1.06l.708.707a.75.75 0 0 1 0 1.06ZM4.111 4.111a.75.75 0 0 1-1.06 0l-.708-.707a.75.75 0 1 1 1.06-1.061l.708.707a.75.75 0 0 1 0 1.061Z" />
+          </svg>
+        </button>
+        <button type="button" data-theme-choice="system" aria-pressed="false" aria-label="Follow the system theme"
+          title="System">
+          <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path fill="currentColor"
+              d="M1.75 2h12.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 14.25 13H9.5v1h1.75a.75.75 0 0 1 0 1.5h-6.5a.75.75 0 0 1 0-1.5H6.5v-1H1.75A1.75 1.75 0 0 1 0 11.25v-7.5C0 2.784.784 2 1.75 2Zm0 1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z" />
+          </svg>
+        </button>
+        <button type="button" data-theme-choice="dark" aria-pressed="false" aria-label="Dark theme" title="Dark">
+          <svg class="icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path fill="currentColor"
+              d="M9.598 1.591a.75.75 0 0 1 .785-.175 7 7 0 1 1-8.967 8.967.75.75 0 0 1 .961-.96 5.5 5.5 0 0 0 7.046-7.046.75.75 0 0 1 .175-.786Zm1.616 1.945a7 7 0 0 1-7.678 7.678 5.5 5.5 0 1 0 7.678-7.678Z" />
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -469,8 +511,8 @@
 
          width/height are the SVG's intrinsic size: gives the browser the aspect
          ratio up front so nothing reflows once the image loads. -->
-    <img class="keymap"
-      src="https://raw.githubusercontent.com/sterrenb/zmk-config/main/keymap-drawer/corne.svg" width="840" height="1433"
+    <img class="keymap" src="https://raw.githubusercontent.com/sterrenb/zmk-config/main/keymap-drawer/corne.svg"
+      width="840" height="1433"
       alt="Keymap diagram: base, lower, raise, adjust and mouse layers for a 42-key split keyboard.">
   </main>
 
@@ -629,12 +671,84 @@
         key.classList.add('kb-open');
       }
 
+      /*
+       * Tooltip trigger mode: 'hover' vs 'click'.
+       * On desktop (fine pointer + hover capability), defaults to 'hover' and
+       * persists the user's preference in localStorage.
+       * On touch / mobile devices, stays 'click' and the toggle is hidden via CSS.
+       */
+      const isDesktopHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      let tipMode = 'hover';
+      try {
+        const saved = localStorage.getItem('tip-mode');
+        if (saved === 'hover' || saved === 'click') tipMode = saved;
+      } catch (e) { }
+
+      const modeGroup = document.querySelector('.tip-mode');
+      if (modeGroup && isDesktopHover) {
+        const modeButtons = [...modeGroup.querySelectorAll('[data-tip-choice]')];
+        const syncMode = () => {
+          for (const btn of modeButtons) {
+            btn.setAttribute('aria-pressed', String(btn.dataset.tipChoice === tipMode));
+          }
+        };
+
+        for (const btn of modeButtons) {
+          btn.addEventListener('click', () => {
+            const choice = btn.dataset.tipChoice;
+            if (choice !== 'hover' && choice !== 'click') return;
+            tipMode = choice;
+            try {
+              localStorage.setItem('tip-mode', choice);
+            } catch (e) { }
+            syncMode();
+            close();
+          });
+        }
+
+        syncMode();
+        modeGroup.hidden = false;
+      }
+
+      let closeTimer = null;
+      const scheduleClose = (delay = 120) => {
+        clearTimeout(closeTimer);
+        closeTimer = setTimeout(close, delay);
+      };
+
+      const cancelClose = () => {
+        clearTimeout(closeTimer);
+      };
+
+      tip.addEventListener('pointerenter', () => {
+        if (isDesktopHover && tipMode === 'hover') cancelClose();
+      });
+      tip.addEventListener('pointerleave', (event) => {
+        if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
+          scheduleClose();
+        }
+      });
+
       for (const key of targets.keys()) {
         key.addEventListener('click', (event) => {
           event.stopPropagation();
+          cancelClose();
           const wasOpen = openKey === key;
           close();
           if (!wasOpen) open(key);
+        });
+
+        key.addEventListener('pointerenter', (event) => {
+          if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
+            cancelClose();
+            open(key);
+          }
+        });
+
+        key.addEventListener('pointerleave', (event) => {
+          if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
+            scheduleClose();
+          }
         });
       }
 
@@ -807,7 +921,7 @@
         if (entry.isIntersecting) {
           markup()
             .then((svg) => (svgLink.download = `${stem(svg)}.svg`))
-            .catch(() => {});
+            .catch(() => { });
         }
       }).observe(frame);
     })();

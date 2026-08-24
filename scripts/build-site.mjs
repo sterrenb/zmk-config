@@ -24,6 +24,7 @@ const OUT_DIR = 'dist';
 // Must match the <img src> committed in site/index.html.
 const REMOTE_SVG =
   'https://raw.githubusercontent.com/sterrenb/zmk-config/main/keymap-drawer/corne.svg';
+const TOOLTIPS_REF = 'tooltips.json';
 
 const die = (msg) => {
   console.error(`error: ${msg}`);
@@ -49,8 +50,11 @@ const template = readFileSync(indexPath, 'utf8');
 if (!template.includes(REMOTE_SVG)) {
   die(
     `${indexPath} does not reference ${REMOTE_SVG}\n` +
-      '       REMOTE_SVG in this script and the <img src> must be kept in sync.'
+    '       REMOTE_SVG in this script and the <img src> must be kept in sync.'
   );
+}
+if (!template.includes(TOOLTIPS_REF)) {
+  die(`${indexPath} does not reference ${TOOLTIPS_REF}`);
 }
 
 rmSync(OUT_DIR, { recursive: true, force: true });
@@ -61,16 +65,38 @@ mkdirSync(join(OUT_DIR, 'assets'), { recursive: true });
 const svg = readFileSync(srcSvg);
 const hash = createHash('sha256').update(svg).digest('hex').slice(0, 12);
 const asset = `assets/keymap.${hash}.svg`;
+const svgHash = createHash('sha256').update(svg).digest('hex').slice(0, 12);
+const svgAsset = `assets/keymap.${svgHash}.svg`;
 
 writeFileSync(join(OUT_DIR, asset), svg);
+writeFileSync(join(OUT_DIR, svgAsset), svg);
 
 const html = template.split(REMOTE_SVG).join(asset);
+// Resolve tooltip definitions (matched on binding) to key positions. Fails if a
+// definition no longer matches anything, or if the diagram is out of step with
+// the keymap, so a rebound key cannot silently orphan its tooltip.
+const rawTooltipsPath = join(OUT_DIR, 'tooltips.json');
+execFileSync(
+  process.execPath,
+  ['scripts/build-tooltips.mjs', rawTooltipsPath, srcSvg],
+  { stdio: 'inherit' }
+);
+
+const tooltipsJson = readFileSync(rawTooltipsPath);
+const tooltipsHash = createHash('sha256').update(tooltipsJson).digest('hex').slice(0, 12);
+const tooltipsAsset = `assets/tooltips.${tooltipsHash}.json`;
+writeFileSync(join(OUT_DIR, tooltipsAsset), tooltipsJson);
+
+let html = template.split(REMOTE_SVG).join(svgAsset);
+html = html.split(TOOLTIPS_REF).join(tooltipsAsset);
 
 // The remote URL is a working image, so an unsubstituted page would look fine
 // while silently hotlinking GitHub and losing the immutable caching. Check both
 // directions rather than trusting the replace.
 if (html.includes(REMOTE_SVG)) die(`the remote diagram URL was not replaced in ${OUT_DIR}/index.html`);
 if (!html.includes(asset)) die(`${asset} is not referenced by ${OUT_DIR}/index.html`);
+if (!html.includes(svgAsset)) die(`${svgAsset} is not referenced by ${OUT_DIR}/index.html`);
+if (!html.includes(tooltipsAsset)) die(`${tooltipsAsset} is not referenced by ${OUT_DIR}/index.html`);
 
 writeFileSync(join(OUT_DIR, 'index.html'), html);
 
@@ -88,3 +114,4 @@ execFileSync(
 );
 
 console.log(`built ${OUT_DIR}/ -> ${asset}`);
+console.log(`built ${OUT_DIR}/ -> ${svgAsset}, ${tooltipsAsset}`);

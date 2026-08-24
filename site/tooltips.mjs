@@ -58,9 +58,8 @@ export default {
     match: '&ltt',
     title: 'Layer-tap thumb',
     body:
-      'Tap for backspace, hold for the Num layer. Tap and then press again ' +
-      'quickly to hold backspace down and delete continuously -- a plain hold ' +
-      'gives you the layer instead.',
+      'Tap for backspace, hold for the Num layer. Hold together with the Nav thumb for Media (tri-layer). ' +
+      'Quick tap-then-hold repeats backspace.',
     pre: 'flavor:        hold-preferred\nquick-tap-ms:  175',
     links: [
       {
@@ -74,9 +73,8 @@ export default {
     match: '&ltt_norepeat',
     title: 'Layer-tap thumb',
     body:
-      'Tap for escape, hold for the Nav layer. Unlike the backspace thumb this ' +
-      'one has no quick-tap window: escape has no use for auto-repeat, and the ' +
-      'window would otherwise turn "escape, then hold for Nav" into a second escape.',
+      'Tap for escape, hold for the Nav layer. Hold together with the Num thumb for Media (tri-layer). ' +
+      'No repeat window so a quick tap-then-hold enters Nav immediately.',
     pre: 'flavor:        hold-preferred\nquick-tap-ms:  (disabled)',
   },
 
@@ -274,6 +272,46 @@ export default {
       'does not depend on the modifier reaching the host first.',
   },
 
+  'media-prev': {
+    match: '&kp C_PREV',
+    title: 'Previous track',
+  },
+
+  'media-next': {
+    match: '&kp C_NEXT',
+    title: 'Next track',
+  },
+
+  'media-vol-down': {
+    match: '&kp C_VOL_DN',
+    title: 'Volume down',
+  },
+
+  'media-vol-up': {
+    match: '&kp C_VOL_UP',
+    title: 'Volume up',
+  },
+
+  'media-mute': {
+    match: '&kp C_MUTE',
+    title: 'Mute audio',
+  },
+
+  'media-play-pause': {
+    match: '&kp C_PLAY_PAUSE',
+    title: 'Play / Pause',
+  },
+
+  'brightness-down': {
+    match: '&kp C_BRI_DN',
+    title: 'Brightness down',
+  },
+
+  'brightness-up': {
+    match: '&kp C_BRI_UP',
+    title: 'Brightness up',
+  },
+
   'sys-reset': {
     match: '&reset_hold',
     title: 'Reset',
@@ -289,20 +327,8 @@ export default {
     title: 'Bootloader',
     keys: ['hold 1s'],
     body:
-      'Reboots the half this key is on into the UF2 bootloader, so it mounts as a ' +
-      'USB drive for flashing -- no double-tapping the reset button. ZMK runs this ' +
-      'on the half whose key was pressed, so Nav flashes the left half and Num the ' +
-      'right.',
-    pre:
-      'Why not on Media? That layer needs a thumb on BOTH halves.\n' +
-      'A half in the bootloader stops scanning and drops its BLE\n' +
-      'link, so Media would become unreachable the moment you\n' +
-      'flashed one -- stranding the other. Nav and Num each need\n' +
-      'only one thumb, so either half stays reachable alone.\n' +
-      '\n' +
-      'A press shorter than a second does nothing: the wrapper is\n' +
-      'flavor = "tap-preferred", so it resolves to the hold only\n' +
-      'once the full second elapses, and to &none otherwise.',
+      'Reboots the half this key is on into the UF2 bootloader for flashing firmware. ' +
+      'Must be held for 1 second to prevent accidental triggers.',
     links: [
       {
         text: 'ZMK reset behaviours',
