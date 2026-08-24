@@ -3,9 +3,8 @@
 [ZMK](https://github.com/zmkfirmware/zmk) firmware configuration for two keyboards sharing a
 single keymap:
 
-- a [Corne keyboard](https://github.com/foostan/crkbd) from Typeractive (`nice_nano_v2`)
-- a [Toucan2](https://docs.beekeeb.com/toucan2-keyboard) from beekeeb (`seeeduino_xiao_ble`,
-  with a display and an Azoteq trackpad)
+- [Corne](https://github.com/foostan/crkbd) from Typeractive (`nice_nano_v2`)
+- [Toucan2](https://docs.beekeeb.com/toucan2-keyboard) from beekeeb (`seeeduino_xiao_ble`,  Azoteq trackpad)
 
 This configuration uses the [Graphite](https://github.com/rdavison/graphite-layout) layout with [home row mods](https://precondition.github.io/home-row-mods).
 
@@ -19,12 +18,10 @@ include.
 
 > Generated with [Keymap Drawer](https://github.com/caksoylar/keymap-drawer).
 
-**One diagram covers both keyboards.** It is drawn on the Corne's physical layout, but the
+It is drawn on the Corne's physical layout, but the
 bindings, layers and combos are the same on the Toucan2. The only layer that behaves
 differently is `Mouse`, which the Toucan2's trackpad activates while a finger rests on it and
 which is unreachable on the Corne.
-
-`Adjust` is reached by holding both thumb layer keys together (tri-layer).
 
 ## Key Positions
 
