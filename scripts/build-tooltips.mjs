@@ -11,14 +11,15 @@
 //
 //     { keys: { "<layerIndex>.<keyPosition>": "<id>" }, content: { "<id>": {...} } }
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = new URL('..', import.meta.url);
 const keymapPath = fileURLToPath(new URL('config/shared/keymap.dtsi', root));
-const outFile = process.argv[2] ?? 'dist/tooltips.json';
-const svgPath = process.argv[3] ?? 'keymap-drawer/corne.svg';
+const outFile = process.argv[2] ?? 'site/tooltips.json';
+const defaultSvg = existsSync('keymap-drawer/corne.local.svg') ? 'keymap-drawer/corne.local.svg' : 'keymap-drawer/corne.svg';
+const svgPath = process.argv[3] ?? defaultSvg;
 
 const defs = (await import(new URL('site/tooltips.mjs', root))).default;
 
@@ -58,11 +59,28 @@ if (widths.size !== 1) {
   throw new Error(`Layers have differing key counts (${detail}) - parse is unreliable.`);
 }
 
+// --- parse combos -----------------------------------------------------------
+
+const combosPath = fileURLToPath(new URL('config/shared/combos.dtsi', root));
+const combosSrc = readFileSync(combosPath, 'utf8')
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/\/\/[^\n]*/g, '');
+
+const combosBody = combosSrc.match(/combos\s*\{([\s\S]*)\};/)?.[1] ?? '';
+const comboRe = /COMBO(?:_BASE)?\s*\(\s*(\w+)\s*,\s*([^,]+)\s*,\s*([\d\s]+)/g;
+const combos = [];
+for (const [, name, rawBinding, rawPositions] of combosBody.matchAll(comboRe)) {
+  const binding = rawBinding.trim();
+  const positions = rawPositions.trim().split(/\s+/).map(Number);
+  combos.push({ name, binding, positions });
+}
+
 // --- resolve matches --------------------------------------------------------
 
 const matches = (binding, pattern) => binding === pattern || binding.startsWith(`${pattern} `);
 
 const keys = {};
+const comboMatches = {};
 const unmatched = [];
 const collisions = [];
 
@@ -70,28 +88,36 @@ for (const [id, def] of Object.entries(defs)) {
   if (!def.match) throw new Error(`Tooltip "${id}" has no "match".`);
 
   let hits = 0;
-  layers.forEach((layer, layerIndex) => {
-    if (def.layer !== undefined && def.layer !== layerIndex) return;
-    layer.bindings.forEach((binding, keyIndex) => {
-      if (!matches(binding, def.match)) return;
-      const slot = `${layerIndex}.${keyIndex}`;
-      if (keys[slot] && keys[slot] !== id) {
-        collisions.push(`${slot}: "${keys[slot]}" and "${id}"`);
-        return; // first definition wins
-      }
-      keys[slot] = id;
+  if (def.combo) {
+    combos.forEach((combo, comboIndex) => {
+      if (!matches(combo.binding, def.match)) return;
+      comboMatches[comboIndex] = { id, positions: combo.positions };
       hits += 1;
     });
-  });
+  } else {
+    layers.forEach((layer, layerIndex) => {
+      if (def.layer !== undefined && def.layer !== layerIndex) return;
+      layer.bindings.forEach((binding, keyIndex) => {
+        if (!matches(binding, def.match)) return;
+        const slot = `${layerIndex}.${keyIndex}`;
+        if (keys[slot] && keys[slot] !== id) {
+          collisions.push(`${slot}: "${keys[slot]}" and "${id}"`);
+          return; // first definition wins
+        }
+        keys[slot] = id;
+        hits += 1;
+      });
+    });
+  }
 
   if (hits === 0) unmatched.push(`${id} (match: ${def.match})`);
 }
 
 if (unmatched.length > 0) {
   throw new Error(
-    'These tooltips match no key in the current keymap:\n' +
-      unmatched.map((u) => `  - ${u}`).join('\n') +
-      '\nUpdate the "match" in site/tooltips.mjs, or remove the entry.'
+    'These tooltips match no key or combo in the current keymap:\n' +
+    unmatched.map((u) => `  - ${u}`).join('\n') +
+    '\nUpdate the "match" in site/tooltips.mjs, or remove the entry.'
   );
 }
 
@@ -155,10 +181,11 @@ const content = Object.fromEntries(
 );
 
 mkdirSync(dirname(outFile), { recursive: true });
-writeFileSync(outFile, `${JSON.stringify({ keys, content }, null, 1)}\n`, 'utf8');
+writeFileSync(outFile, `${JSON.stringify({ keys, combos: comboMatches, content }, null, 1)}\n`, 'utf8');
 
 const layerNames = layers.map((l) => l.name.replace(/_layer$/, '')).join(', ');
+const comboCount = Object.keys(comboMatches).length;
 console.log(
-  `tooltips: ${Object.keys(content).length} definitions -> ${Object.keys(keys).length} keys ` +
-    `across ${layers.length} layers (${layerNames}) -> ${outFile}`
+  `tooltips: ${Object.keys(content).length} definitions -> ${Object.keys(keys).length} keys, ` +
+  `${comboCount} combos across ${layers.length} layers (${layerNames}) -> ${outFile}`
 );
