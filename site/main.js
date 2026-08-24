@@ -180,7 +180,7 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
         docLink.rel = 'noopener noreferrer';
         docLink.title = 'View official ZMK documentation';
         docLink.setAttribute('aria-label', 'ZMK Documentation');
-        docLink.innerHTML = `<svg class="icon" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.5.75a.75.75 0 0 1 .75-.75h3.25a.75.75 0 0 1 .75-.75v3.25a.75.75 0 0 1-1.5 0V4.31l-4.72 4.72a.75.75 0 0 1-1.06-1.06l4.72-4.72H11a.75.75 0 0 1-.75-.75Z"/></svg>`;
+        docLink.innerHTML = `<svg class="icon" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Zm7.251 10.324.004-5.073-.002-2.253A2.25 2.25 0 0 0 5.003 2.5H1.5v9h3.757a3.75 3.75 0 0 1 1.994.574ZM8.755 4.75l-.004 7.322a3.752 3.752 0 0 1 1.992-.572H14.5v-9h-3.495a2.25 2.25 0 0 0-2.25 2.25Z"/></svg>`;
       }
     }
     if (content.keys) {
@@ -302,7 +302,6 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   }
 
   tip.addEventListener('mouseenter', () => {
-    if (tipMode === 'hover') cancelLeave();
     if (tipMode === 'hover') {
       cancelLeave();
       cancelOpen();
@@ -315,7 +314,6 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   for (const target of targets.keys()) {
     target.addEventListener('mouseenter', () => {
       cancelLeave();
-      if (tipMode === 'hover') open(target);
       cancelOpen();
       if (tipMode === 'hover') {
         if (openTarget) {
