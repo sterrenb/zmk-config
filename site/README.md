@@ -17,22 +17,16 @@ An accessible, interactive web viewer for the ZMK keymap diagrams, published via
 
 ## Running Locally
 
-1. **(Optional) Redraw Keymap:**
-   If you made changes to `config/shared/keymap.dtsi`:
+1. **Development Server (HMR):**
    ```powershell
-   powershell -File .\scripts\draw.ps1
+   npm run dev
    ```
+   Opens <http://localhost:8080> with live hot module reloading.
 
-2. **Build the Site:**
+2. **Production Build & Preview:**
    ```powershell
-   node scripts/build-site.mjs
-   ```
-
-3. **Serve `dist/`:**
-   ```powershell
-   npx serve dist
-   # or with Python:
-   python -m http.server -d dist 8080
+   npm run build
+   npm run preview
    ```
 
 ---

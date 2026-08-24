@@ -11,14 +11,17 @@
 //
 //     { keys: { "<layerIndex>.<keyPosition>": "<id>" }, content: { "<id>": {...} } }
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = new URL('..', import.meta.url);
 const keymapPath = fileURLToPath(new URL('config/shared/keymap.dtsi', root));
-const outFile = process.argv[2] ?? 'dist/tooltips.json';
-const svgPath = process.argv[3] ?? 'keymap-drawer/corne.svg';
+const outFile = process.argv[2] ?? 'site/tooltips.json';
+const defaultSvg = existsSync(fileURLToPath(new URL('keymap-drawer/corne.local.svg', root)))
+  ? 'keymap-drawer/corne.local.svg'
+  : 'keymap-drawer/corne.svg';
+const svgPath = process.argv[3] ?? defaultSvg;
 
 const defs = (await import(new URL('site/tooltips.mjs', root))).default;
 
@@ -90,8 +93,8 @@ for (const [id, def] of Object.entries(defs)) {
 if (unmatched.length > 0) {
   throw new Error(
     'These tooltips match no key in the current keymap:\n' +
-      unmatched.map((u) => `  - ${u}`).join('\n') +
-      '\nUpdate the "match" in site/tooltips.mjs, or remove the entry.'
+    unmatched.map((u) => `  - ${u}`).join('\n') +
+    '\nUpdate the "match" in site/tooltips.mjs, or remove the entry.'
   );
 }
 
@@ -160,5 +163,5 @@ writeFileSync(outFile, `${JSON.stringify({ keys, content }, null, 1)}\n`, 'utf8'
 const layerNames = layers.map((l) => l.name.replace(/_layer$/, '')).join(', ');
 console.log(
   `tooltips: ${Object.keys(content).length} definitions -> ${Object.keys(keys).length} keys ` +
-    `across ${layers.length} layers (${layerNames}) -> ${outFile}`
+  `across ${layers.length} layers (${layerNames}) -> ${outFile}`
 );
