@@ -334,21 +334,19 @@ import keymapSvgRaw from '../keymap-drawer/corne.svg?raw';
   });
 
   /* ---- download controls -------------------------------------------- */
-  initDownloads(version);
+  initDownloads(version, keymapSvgRaw);
 })();
 
 /* ==========================================================================
    Downloads Controller
    ========================================================================== */
-function initDownloads(version) {
+function initDownloads(version, svgMarkup) {
   const box = document.querySelector('.kb-dl');
   const svgLink = box?.querySelector('a[download]');
   const frame = document.querySelector('main');
   if (!box || !svgLink || !frame) return;
 
   const SCALE = 2;
-
-  const markup = () => Promise.resolve(keymapSvgRaw);
 
   function stem(svg) {
     const match = svg.match(/<g[^>]*class="layer-([^"]*)"/);
@@ -375,6 +373,8 @@ function initDownloads(version) {
         canvas.height = image.naturalHeight * SCALE;
 
         const ctx = canvas.getContext('2d');
+        // White fill so the PNG has an opaque background regardless of the
+        // active theme — dark-on-transparent looks broken in most apps.
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -392,6 +392,11 @@ function initDownloads(version) {
     });
   }
 
+  // Replace the static href with the build-inlined SVG so the download works
+  // in production, where the original relative path is not deployed.
+  svgLink.href = URL.createObjectURL(new Blob([svgMarkup], { type: 'image/svg+xml' }));
+  svgLink.download = `${stem(svgMarkup)}.svg`;
+
   const png = document.createElement('button');
   png.type = 'button';
   png.textContent = 'PNG';
@@ -402,8 +407,7 @@ function initDownloads(version) {
     png.disabled = true;
     png.textContent = '...';
     try {
-      const svg = await markup();
-      save(await rasterise(svg), `${stem(svg)}.png`);
+      save(await rasterise(svgMarkup), `${stem(svgMarkup)}.png`);
       png.textContent = 'PNG';
     } catch {
       png.textContent = 'failed';
@@ -429,10 +433,5 @@ function initDownloads(version) {
 
   new IntersectionObserver(([entry]) => {
     box.classList.toggle('kb-dl-on', entry.isIntersecting);
-    if (entry.isIntersecting) {
-      markup()
-        .then((svg) => (svgLink.download = `${stem(svg)}.svg`))
-        .catch(() => { });
-    }
   }).observe(frame);
 }
