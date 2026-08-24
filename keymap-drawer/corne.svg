@@ -297,6 +297,13 @@ path.combo {
 }
 /* End Tabler Icons Cleanup */
 
+@font-face {
+  font-family: 'QuinqueFive';
+  src: url('data:font/woff2;base64,d09GMgABAAAAAAVEAA0AAAAAFiwAAATwAAEZmgAAAAAAAAAAAAAAAAAAAAAAAAAAGhYbWhwwBmAAXAqiPJcnATYCJAOBCAuBCAAEIAWCCAcgGywPUZTuzRTJlwfcYfoXPFBIo27hqIOCxaC1lzGoV4u7gkYEqJdCPvVr/n/7tfvmzcwKpmnPZEw8mazr6YRIKHhIhOoNT5RA/vCQv3uz2+doUUg2JdhEm0IoUr0WtGAD3+fe13V/0PQBYv5nRaAIlseECRqWlj1plYGrcYaH4Fi5VHv3i+S5+yIhlAkN4qUB/LpNIzAW5GYwGXJy1f9d4QB1cyFVxTEMpQ7BrPycX62pDbArsANUYGxVnevu3Sdze0naXlRyxbcl/JQdkatwrZEECoWrUoBOVTg0BrfhrCpM0nwGQa5QBu8DQYBiQgpCTyB4uFODPrzOLG2h+sgnQiD7PkpFhpAA/HOMudyJCOxA5JCEpIW7TiGVnBHBWrNJi9PldU0Rp3MW3UGBKmWAZnggFzxdpZ2YWvJXEnGl8WXJGGMUWqMVXvtGF7wcfhXthoDdzu3VGMHzS3OAUnaCZrTot+1AIbjeRrM245Tt6CXcuzevHj2MiMCkx58B7oE/0BsAJN6OJCIIEnKSZJIYsjXCi1NJTrXUFJdo5uiXnAwphHWMIeJ6drGExbSzHRaGyBgxM8xWkYShGyyRYfTTD6xkOm/J5XWTQoNRaqFc0kxH2xHcs3GXEM1REXRho9hnpVhYGc3myD7V2RVQkunIwpaQjoL6Xgs+eocmYzSELqCRqLk7TvVGYfNmx+1NPlUZPSpKAEIKMJAb9ApPJhzC6SWdKRVgOwQ9I+KT5QqMylVurPMAbzaX6YRwuijGZc4+mXzMwQrt2AjJB0YtUJK7b3CpY1M5G704LCFlpzOAAIins5jQKcPMKwx4GsMwtB7cIZtdC6MxCFL0AIGiI8xEYY08/uaQ11a2RltP76cAxOSy5MBDvmEbspOj2LJsUUUgC8YngsIYaeMDdBwsHc7JtMlmWWehcHwTkBLn+ovsE3ule6YU9TkKkc7Hr6RNUxreVy0ZsG2mhFdiOR8fT6cMO+3fHRZTgl6O0xfAmkDZpFKwl+YRtHabwmU0TxcDHnKxObbXtNche9n7j6o+Sggiqb8xJcPcuh8n11CUd+tQfsECSvbrOTT4ca10BZ1fdwoYc6k3ABOvwHu1KX4q+52geWQPfcZkJM7HlbNJ+4+1tFrEithIRx0+GeFFoqAbcsfdDyicZcfJgx9dm2g8gENd6netDElntF3GsJPPR++CIlsVHDe0qUqPkP17o3MM40rk1/mRL0/v/g77/+N32vTu7TOf/4a8EaFATEI+eU0W1bE/moTPk6q07biqRVL4BUPlLPi+kSb4YBlAGYzdemvgBjjgKnXeO4ty8qTnSYvBbJX6YiJnRd59G1UcCDzo/kPqpUz+9SaqmA/fKfWVa0LGzXch71CHvGnUac/yIX0wxT5xAPsfEQZuqVXDyITbAvkhI+K2FxZEg9mh3qErqaTRLqvD+hyZifHjUra5VLT/Yab0jZ0m6OhxvXu//Xdz9bg+/NuLEgcA/PxRAPzu/7Es2qFPABIxHGF7rFCfxfARTDZN5FEWvjHPED5SblKXYtUQq802RpE4YwuKSK2tIqFUoIi1yc2UvCJFu5Vatv0do0Obdv2aETxEJy1mF+uEqJQVbtC7hTEuVO5sbPDz8klJEsINrW4JGW6nbOu6NL+IOGx3m+GXIld4y94hRxLay43bDZ61kEEH3OQmGQDgP+epAgAAAA==') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
 svg.keymap {
   --color--red: rgb(255, 100, 80);
   --color--red-mild: rgb(200, 100, 100);
@@ -308,14 +315,21 @@ svg.keymap {
   font-family: system-ui, sans-serif;
 }
 
+svg.keymap a {
+  pointer-events: none;
+}
+
 /* Hide capitalize_i combo (index 2) to prevent drawing line across split */
 .combopos-2 {
     display: none;
 }
 
-g[class^="layer-"]:first-of-type .label {
-    display: none;
-}
+/* The base layer's label is deliberately left visible: its display-name is
+   KEYMAP_VERSION (config/shared/version.dtsi), so the diagram states which
+   version it documents. release.yml attaches this SVG and a PNG of it to
+   every release, where that stamp is the whole point -- do not hide it
+   again without giving the release assets another way to identify
+   themselves. It lands in the gutter between the two base-layer combos. */
 
 .combo.shifted {
   translate: -6px 1px;
@@ -334,7 +348,6 @@ g[class^="layer-"]:first-of-type .label {
 rect.held {
   stroke: var(--color--red);
   stroke-width: 2;
-  stroke-dasharray: 4 3;
 }
 
 .keypos-0 rect.key,
@@ -350,9 +363,16 @@ rect.held {
 }
 
 text.label {
-  font-family: sans-serif;
-  translate: 392px 100px;
-  font-size: 22px;
+  font-family: 'QuinqueFive', monospace;
+  font-weight: normal;
+  text-anchor: middle;
+  fill: var(--strong, #1f2328);
+  stroke: var(--bg, #ffffff);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  translate: 420px 100px;
+  font-size: 14px;
 }
 
 .hold {
