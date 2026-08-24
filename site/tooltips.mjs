@@ -78,9 +78,27 @@ export default {
     pre: 'flavor:        hold-preferred\nquick-tap-ms:  (disabled)',
   },
 
-  // NOTE: combos are not addressable in this pass -- they live in combos.dtsi,
-  // not in a layer's bindings, so a "&capitalize_i" entry here would match
-  // nothing and fail the build. Combo support is additive later via combopos-N.
+  // --- Combos --------------------------------------------------------------
+
+  'caps-lock': {
+    combo: true,
+    match: '&kp CAPSLOCK',
+    title: 'Caps Lock',
+    body: 'Press Z and \' simultaneously on the inner top row to toggle Caps Lock.',
+    keys: ['Z', '\''],
+    body: 'Toggles standard Caps Lock.',
+  },
+
+  'caps-word': {
+    combo: true,
+    match: '&caps_word',
+    title: 'Caps Word',
+    body:
+      'Press V and P simultaneously on the inner bottom row. ' +
+      'Capitalizes letters automatically until a space or punctuation is pressed.',
+    keys: ['V', 'K'],
+    body: 'Capitalizes words until space, punctuation, or backspace is pressed.',
+  },
 
   'clipboard-copy': {
     match: '&kp LC(C)',

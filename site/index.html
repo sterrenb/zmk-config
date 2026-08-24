@@ -178,6 +178,34 @@
       r: 4.5;
     }
 
+    /* --- documented combos ----------------------------------------------- */
+
+    .kb-combo-doc {
+      cursor: pointer;
+    }
+
+    .kb-combo-dot {
+      fill: var(--link);
+      pointer-events: none;
+    }
+
+    .kb-combo-doc:hover .kb-combo-dot,
+    .kb-combo-doc.kb-open .kb-combo-dot {
+      r: 3.5;
+    }
+
+    .kb-combo-doc:hover rect.combo,
+    .kb-combo-doc.kb-open rect.combo {
+      stroke: var(--link);
+      stroke-width: 1.5;
+    }
+
+    .kb-combo-source rect.key {
+      stroke: var(--link) !important;
+      stroke-width: 2.5px !important;
+      stroke-dasharray: 4 3;
+    }
+
     /* --- tooltip ---------------------------------------------------------- */
 
     .kb-tip {
@@ -600,6 +628,32 @@
         targets.set(key, id);
       }
 
+      // Resolve combos
+      const comboTargets = new Map();
+      if (data.combos) {
+        for (const [comboIndex, comboData] of Object.entries(data.combos)) {
+          const comboEl = svg.querySelector(`.combopos-${comboIndex}`);
+          const id = typeof comboData === 'string' ? comboData : comboData.id;
+          const positions = comboData.positions || [];
+          if (!comboEl || !data.content[id]) continue;
+
+          comboEl.classList.add('kb-combo-doc');
+          const rect = comboEl.querySelector('rect.combo');
+          if (rect) {
+            const rx = parseFloat(rect.getAttribute('x'));
+            const ry = parseFloat(rect.getAttribute('y'));
+            const rw = parseFloat(rect.getAttribute('width'));
+            const dot = document.createElementNS(NS, 'circle');
+            dot.setAttribute('cx', String(rx + rw - 3.5));
+            dot.setAttribute('cy', String(ry + 3.5));
+            dot.setAttribute('r', '2.2');
+            dot.setAttribute('class', 'kb-combo-dot');
+            comboEl.appendChild(dot);
+          }
+          comboTargets.set(comboEl, { id, positions });
+        }
+      }
+
       /* ---- renderer boundary -------------------------------------------
        * Everything below is presentation only. It consumes the structured
        * fields (title / keys / body / pre / links) and knows nothing about how
@@ -610,7 +664,8 @@
       tip.className = 'kb-tip';
       tip.hidden = true;
       document.body.appendChild(tip);
-      let openKey = null;
+      let openTarget = null;
+      let activeSources = [];
 
       const el = (tag, text, parent) => {
         const node = document.createElement(tag);
@@ -657,18 +712,40 @@
         tip.style.top = `${top + scrollY}px`;
       }
 
-      function close() {
-        tip.hidden = true;
-        openKey?.classList.remove('kb-open');
-        openKey = null;
+      function clearHighlights() {
+        for (const element of activeSources) {
+          element.classList.remove('kb-combo-source');
+        }
+        activeSources = [];
       }
 
-      function open(key) {
-        render(data.content[targets.get(key)]);
+      function close() {
+        tip.hidden = true;
+        openTarget?.classList.remove('kb-open');
+        openTarget = null;
+        clearHighlights();
+      }
+
+      function open(element, contentId, sourcePositions = []) {
+        close();
+        render(data.content[contentId]);
         tip.hidden = false;
-        place(key);
-        openKey = key;
-        key.classList.add('kb-open');
+        place(element);
+        openTarget = element;
+        element.classList.add('kb-open');
+
+        if (sourcePositions.length > 0) {
+          const baseLayer = layers[0];
+          if (baseLayer) {
+            for (const pos of sourcePositions) {
+              const keyEl = baseLayer.querySelector(`.keypos-${pos}`);
+              if (keyEl) {
+                keyEl.classList.add('kb-combo-source');
+                activeSources.push(keyEl);
+              }
+            }
+          }
+        }
       }
 
       /*
@@ -729,23 +806,46 @@
         }
       });
 
-      for (const key of targets.keys()) {
+      for (const [key, id] of targets.entries()) {
         key.addEventListener('click', (event) => {
           event.stopPropagation();
           cancelClose();
-          const wasOpen = openKey === key;
+          const wasOpen = openTarget === key;
           close();
-          if (!wasOpen) open(key);
+          if (!wasOpen) open(key, id);
         });
 
         key.addEventListener('pointerenter', (event) => {
           if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
             cancelClose();
-            open(key);
+            open(key, id);
           }
         });
 
         key.addEventListener('pointerleave', (event) => {
+          if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
+            scheduleClose();
+          }
+        });
+      }
+
+      for (const [comboEl, { id, positions }] of comboTargets.entries()) {
+        comboEl.addEventListener('click', (event) => {
+          event.stopPropagation();
+          cancelClose();
+          const wasOpen = openTarget === comboEl;
+          close();
+          if (!wasOpen) open(comboEl, id, positions);
+        });
+
+        comboEl.addEventListener('pointerenter', (event) => {
+          if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
+            cancelClose();
+            open(comboEl, id, positions);
+          }
+        });
+
+        comboEl.addEventListener('pointerleave', (event) => {
           if (isDesktopHover && tipMode === 'hover' && event.pointerType === 'mouse') {
             scheduleClose();
           }

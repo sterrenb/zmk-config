@@ -84,7 +84,6 @@ draw_config:
       stroke-width: 3px;
       stroke-linejoin: round;
       paint-order: stroke fill;
-      translate: 392px 100px;
       translate: 420px 100px;
       font-size: 14px;
     }
