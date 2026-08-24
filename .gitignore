@@ -1,2 +1,4 @@
 keymap-drawer/*.local.*
 dist/
+node_modules/
+site/tooltips.json
