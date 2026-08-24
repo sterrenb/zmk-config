@@ -49,6 +49,7 @@ The site deploys automatically on push/merge to `main`.
 | :--- | :--- |
 | **Framework preset** | `None` |
 | **Build command** | `node scripts/build-site.mjs` |
+| **Build command** | `npm run build` |
 | **Build output directory** | `dist` |
 | **Root directory** | ` ` *(repository root)* |
 
