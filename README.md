@@ -6,6 +6,9 @@ single keymap:
 - [Corne](https://github.com/foostan/crkbd) from Typeractive (`nice_nano_v2`)
 - [Toucan2](https://docs.beekeeb.com/toucan2-keyboard) from beekeeb (`seeeduino_xiao_ble`, Azoteq trackpad)
 
+At the desk the Corne runs against a [beekeeb Prospector](https://github.com/carrefinho/prospector)
+dongle (`seeeduino_xiao_ble`) that takes over as the split central and drives a colour LCD.
+
 This configuration uses the [Graphite](https://github.com/rdavison/graphite-layout) layout with [home row mods](https://precondition.github.io/home-row-mods).
 
 Both boards are 42-key with identical key numbering, so the keymap, behaviors and combos live
@@ -44,8 +47,15 @@ The firmware and diagrams are built via GitHub Actions workflow. Each release at
 
 | File | Flash to |
 | --- | --- |
-| `corne_left.uf2` / `corne_right.uf2` | Corne halves |
+| `corne_dongle.uf2` | Prospector dongle (Seeed XIAO BLE) |
+| `corne_left_peripheral.uf2` | Left Corne half, for use with the dongle |
+| `corne_left_standalone.uf2` | Left Corne half, as a standalone Bluetooth central |
+| `corne_right.uf2` | Right Corne half — same firmware in both setups |
 | `toucan2_left.uf2` / `toucan2_right.uf2` | Toucan2 halves |
+
+The Corne runs either against the Prospector dongle or standalone over Bluetooth; the two
+differ only in which firmware the left half carries. The right half is a peripheral either
+way and never needs reflashing.
 
 Alongside the zip it attaches the keymap diagram as it stood at that version, as
 `keymap-<version>.svg` and `keymap-<version>.png` (2x light render).
@@ -59,6 +69,19 @@ To clear persistent Bluetooth bonds and settings:
 
 * **Precompiled UF2s:** Download directly for [nice!nano v2](https://nicekeyboards.com/docs/nice-nano/troubleshooting#flashing-settings-reset) or [Seeed XIAO BLE](https://wiki.seeedstudio.com/XIAO_BLE/).
 * **Manual Build:** Run the **Build Settings Reset Firmware** workflow dispatch action in GitHub Actions.
+
+Moving the Corne between dongle and standalone mode changes which device is the split
+central, which invalidates the existing bonds. Flash `settings_reset` to **every** device
+involved before flashing the new firmware, or the halves will keep looking for their old
+central and never pair.
+
+**To dongle mode:** reset the dongle and both halves, then flash `corne_dongle.uf2`,
+`corne_left_peripheral.uf2` and `corne_right.uf2`. Power the halves off, plug the dongle
+in, then switch on the left half first and the right second — the Prospector lays its
+battery widgets out in pairing order.
+
+**Back to standalone:** reset both halves and flash `corne_left_standalone.uf2` to the
+left. The right half needs the reset but no new firmware.
 
 ## Drawing the Keymap Locally
 

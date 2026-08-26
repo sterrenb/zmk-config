@@ -6,6 +6,8 @@ manifest:
       url-base: https://github.com/beekeeb
     - name: caksoylar
       url-base: https://github.com/caksoylar
+    - name: carrefinho
+      url-base: https://github.com/carrefinho
   projects:
     # `# track:` markers are read by scripts/check-module-updates.ps1 to report
     # when a pin has fallen behind. Every project must carry one — the script
@@ -48,6 +50,15 @@ manifest:
     - name: zmk-input-zoom
       remote: beekeeb
       revision: 91bbe0c0e02145da50c9df798489479d28be1804 # track: main
+
+    # Prospector dongle display module: the prospector_adapter shield, its
+    # ST7789V driver and the layer/battery/caps-word widgets. `main` is the
+    # branch that targets ZMK v0.3 / Zephyr 3.5; `feat/new-status-screens` is
+    # for ZMK main and would not build here.
+    # pinned 2026-08-26 (upstream commit 2026-02-17)
+    - name: prospector-zmk-module
+      remote: carrefinho
+      revision: 77a852293532879c992847e01db27abe4f94fa9f # track: main
 
     # Provides the rgbled_adapter shield used by both Toucan2 halves.
     - name: zmk-rgbled-widget
