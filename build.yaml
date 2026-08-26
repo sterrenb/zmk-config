@@ -19,11 +19,29 @@
 #
 ---
 include:
-  # Corne (Typeractive) — standalone
+  # Corne + Prospector dongle — desk setup.
+  # The dongle is the split central and runs the keymap; both halves are
+  # peripherals; the halves keep no host connection of their own.
+  - board: seeeduino_xiao_ble
+    shield: corne_dongle prospector_adapter
+    snippet: studio-rpc-usb-uart
+    artifact-name: corne_dongle
+  - board: nice_nano_v2
+    shield: corne_left nice_view_adapter nice_view
+    # Demotes the left half to a peripheral. CONFIG_ZMK_SPLIT is already
+    # defaulted on for corne_left by ZMK's shield Kconfig.defconfig, so unlike
+    # the example in ZMK's dongle guide it does not need repeating here.
+    cmake-args: -DCONFIG_ZMK_SPLIT_ROLE_CENTRAL=n
+    artifact-name: corne_left_peripheral
+
+  # Corne standalone — left half back as the central.
   - board: nice_nano_v2
     shield: corne_left nice_view_adapter nice_view
     snippet: studio-rpc-usb-uart
-    artifact-name: corne_left
+    artifact-name: corne_left_standalone
+
+  # Right half. Peripheral in both topologies, so this one artifact serves the
+  # dongle and standalone setups and never needs reflashing between them.
   - board: nice_nano_v2
     shield: corne_right nice_view_adapter nice_view
     artifact-name: corne_right
@@ -37,4 +55,3 @@ include:
   - board: seeeduino_xiao_ble
     shield: toucan_right rgbled_adapter
     artifact-name: toucan2_right
-

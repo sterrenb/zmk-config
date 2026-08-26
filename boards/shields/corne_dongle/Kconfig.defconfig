@@ -1,0 +1,29 @@
+if SHIELD_CORNE_DONGLE
+
+config ZMK_SPLIT
+    default y
+
+config ZMK_SPLIT_ROLE_CENTRAL
+    default y
+
+# Both Corne halves are peripherals in this topology. ZMK's own default is 1
+# (app/src/split/bluetooth/Kconfig.defaults), which would bind only one half.
+config ZMK_SPLIT_BLE_CENTRAL_PERIPHERALS
+    default 2
+
+# Not required -- ZMK's 6/6 default already covers two peripherals. They are here
+# for profile parity. The dongle keeps a BLE host output whether or not it is
+# wanted (ZMK_SPLIT_BLE depends on ZMK_BLE, so the split link cannot exist
+# without it), and ZMK_BLE_PROFILE_COUNT is BT_MAX_PAIRED minus the peripheral
+# count. At 6/6 that leaves 4 profiles and the shared media layer's
+# `&bt BT_SEL 4` would do nothing here while still working on the standalone
+# left half; 7 - 2 keeps all five behaving the same on every device.
+#
+# Shield Kconfig.defconfig is parsed before ZMK's Kconfig.defaults, so these win.
+config BT_MAX_CONN
+    default 7
+
+config BT_MAX_PAIRED
+    default 7
+
+endif
