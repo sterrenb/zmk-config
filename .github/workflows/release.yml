@@ -51,36 +51,30 @@ jobs:
           mv firmware-artifact/firmware.zip firmware-artifact/firmware-${{ steps.extract_version.outputs.version }}.zip
           echo "Renamed artifact to firmware-${{ steps.extract_version.outputs.version }}.zip"
 
-      - name: Collect keymap diagram
+      - name: Download keymap diagram artifact
+        uses: dawidd6/action-download-artifact@v24
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: build.yml
+          run_id: ${{ github.event.workflow_run.id }}
+          path: keymap-artifact
+          name: keymap-diagram
+
+      - name: Rename keymap diagram
         env:
           VERSION: ${{ steps.extract_version.outputs.version }}
-          BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
-          mkdir -p keymap-artifact
-          SVG="keymap-artifact/keymap-$VERSION.svg"
-
-          # Fetched again rather than relying on the checkout: the version stamp
-          # push triggers a redraw of this branch, and that commit can land after
-          # the checkout that started this job.
-          git fetch --quiet origin "$BRANCH"
-
-          # Taken from the release branch rather than the checked-out main, so the
-          # diagram matches the commit that gets tagged: a redraw landing on main
-          # while a release is in flight must not document a version it is not
-          # part of. One diagram covers both keyboards -- see the comment in
-          # draw-keymaps.yml -- so the asset is named "keymap-", not "corne-".
-          git show "origin/$BRANCH:keymap-drawer/corne.svg" > "$SVG"
-
-          # The base layer's label is the stamped version (see the comment in
-          # config/keymap-drawer.config.yml), which is what makes a downloaded
-          # diagram self-identifying -- so a diagram drawn before the stamp would
-          # attach a plausible-looking asset labelled with the previous release.
-          # prepare-release.yml strips the leading "v" for the display string.
-          if ! grep -qF ">${VERSION#v}</text>" "$SVG"; then
-            echo "$SVG is not labelled ${VERSION#v} -- the drawer workflow has" >&2
-            echo "not redrawn $BRANCH yet. Re-run this job once it has." >&2
-            exit 1
-          fi
+          # Renamed rather than left as corne.svg: it is attached to the release
+          # as "keymap-", not "corne-", one diagram covering both keyboards (see
+          # the comment in draw-keymaps.yml).
+          #
+          # No version-label check needed here, unlike the git-fetched copy this
+          # replaced: build.yml's draw job parses config/corne.keymap from the
+          # exact commit it just built, which is the commit prepare-release.yml
+          # already stamped -- there is no separate, independently-triggered
+          # redraw for this to race against.
+          mv keymap-artifact/corne.svg keymap-artifact/keymap-$VERSION.svg
+          echo "Renamed diagram to keymap-$VERSION.svg"
 
       - name: Render keymap diagram to PNG
         env:

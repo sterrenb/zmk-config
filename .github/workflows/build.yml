@@ -23,3 +23,34 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/release/') || github.ref != 'refs/heads/main'))
     uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@v0.3
+
+  # Feeds release.yml's release asset. Scoped to release/* rather than build's
+  # own broader condition: draw-keymaps.yml already redraws and commits on
+  # every push that touches the keymap, so running this on ordinary branches
+  # too would just duplicate that work for an artifact nothing consumes.
+  #
+  # This has to live here, not in release.yml itself: release.yml is triggered
+  # by workflow_run, and GITHUB_SHA/GITHUB_REF for a workflow_run job always
+  # resolve to the default branch, never the branch that triggered the
+  # upstream run (a deliberate security measure against untrusted code running
+  # with elevated permissions -- see the "workflow_run" section of
+  # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows).
+  # A checkout there would silently draw from main instead of the release
+  # branch. build.yml runs on a plain push, so its checkout is the real commit
+  # -- the one with the version already stamped -- and release.yml can fetch
+  # this job's artifact by the same run_id it already uses for the firmware.
+  draw:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
+    uses: caksoylar/keymap-drawer/.github/workflows/draw-zmk.yml@main
+    with:
+      keymap_patterns: "config/corne.keymap"
+      config_path: "config/keymap-drawer.config.yml"
+      output_folder: "keymap-drawer"
+      install_version: "0.23.0"
+      # Not "commit": draw-keymaps.yml already commits the working-tree SVG
+      # that the README embeds. This job exists solely to hand release.yml a
+      # fresh copy for the release asset, without a second redundant commit.
+      destination: artifact
+      artifact_name: keymap-diagram
