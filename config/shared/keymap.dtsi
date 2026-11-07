@@ -16,7 +16,7 @@
                         display-name = KEYMAP_VERSION;
                         bindings = <
                                 &kp ESC         &kp B           &kp L           &kp D           &kp W           &kp Z           &kp SQT         &kp F           &kp O           &kp U           &kp J           &kp BSPC
-                                &kp TAB         &hml LSHFT N    &hml LCTRL R    &hml LALT T     &hml LGUI S     &kp G           &kp Y           &hmr RGUI H     &hmr RALT A     &hmr RCTRL E    &hmr RSHFT I    &kp DQT
+                                &kp TAB         &hml LSHFT N    &hml LCTRL R    &hml LALT T     &hml LGUI S     &kp G           &kp Y           &hmr RGUI H     &hmr LALT A     &hmr RCTRL E    &hmr RSHFT I    &kp DQT
                                 &kp GRAVE       &kp Q           &kp X           &kp M           &kp C           &kp V           &kp K           &kp P           &kp COMMA       &kp DOT         &kp SEMICOLON   &kp DEL
                                                                                 &kp LGUI    &ltt_norepeat NAV ESC   &kp SPACE       &kp RET         &ltt NUM BSPC   &kp TAB
                         >;
