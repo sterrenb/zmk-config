@@ -1,0 +1,6 @@
+// Overrides the beekeeb shield's trackpad power-management timing.
+// timeout-lp1 is in 20-second units; 15 = 300s = 5 minutes, up from the
+// shield's own default of one unit (~20s).
+&tps43_trackpad {
+    timeout-lp1 = <15>;
+};
