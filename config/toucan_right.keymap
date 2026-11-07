@@ -1,0 +1,13 @@
+#include "./toucan.keymap"
+
+// Trackpad power-management timing override. Right half only: it's the half
+// with the physical Azoteq TPS43 chip. timeout-lp1 is in 20-second units;
+// 15 = 300s = 5 minutes, up from the shield's own default of one unit (~20s).
+//
+// This has to live in the .keymap, not an app-level config/toucan_right.overlay:
+// ZMK appends the keymap as the final overlay, after the shield's own overlay
+// has already defined this label. A plain .overlay file is merged earlier,
+// before the shield overlay runs, and fails with "undefined node label".
+&tps43_trackpad {
+    timeout-lp1 = <15>;
+};
